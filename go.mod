@@ -1,8 +1,5 @@
-module tcw.im/tdi
+module tdi
 
-go 1.16
+go 1.15
 
-require (
-	github.com/spf13/cobra v1.1.3
-	tcw.im/ufc v0.2.0
-)
+require tcw.im/ufc v0.2.0

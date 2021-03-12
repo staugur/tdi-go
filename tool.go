@@ -1,4 +1,4 @@
-package tool
+package main
 
 import (
 	"fmt"
@@ -26,8 +26,8 @@ type disk struct {
 	total, used, available, percent int
 }
 
-// DiskInfo returns the usage information of the disk where a directory is located
-func DiskInfo(path string) (info disk, err error) {
+// diskInfo returns the usage information of the disk where a directory is located
+func diskInfo(path string) (info disk, err error) {
 	code, out, err := runCmd("df", "--output=size,used,avail,pcent", path)
 	if code != 0 || err != nil {
 		return
@@ -52,17 +52,17 @@ func DiskInfo(path string) (info disk, err error) {
 	return disk{total, used, avai, percent}, nil
 }
 
-// DiskRate returns the usage rate of the disk where the directory is located
-func DiskRate(path string) (percent int, err error) {
-	info, err := DiskInfo(path)
+// diskRate returns the usage rate of the disk where the directory is located
+func diskRate(path string) (percent int, err error) {
+	info, err := diskInfo(path)
 	if err != nil {
 		return
 	}
 	return info.percent, nil
 }
 
-// MemRate returns system memory usage
-func MemRate() (percent float64, err error) {
+// memRate returns system memory usage
+func memRate() (percent float64, err error) {
 	raw, err := ioutil.ReadFile("/proc/meminfo")
 	if err != nil {
 		return
@@ -93,8 +93,8 @@ func MemRate() (percent float64, err error) {
 	return strconv.ParseFloat(p, 64)
 }
 
-// LoadStat return load value in 5 minutes(float)
-func LoadStat() (loadavg5 float64, err error) {
+// loadStat return load value in 5 minutes(float)
+func loadStat() (loadavg5 float64, err error) {
 	raw, err := ioutil.ReadFile("/proc/loadavg")
 	if err != nil {
 		return
@@ -103,8 +103,8 @@ func LoadStat() (loadavg5 float64, err error) {
 	return strconv.ParseFloat(s, 64)
 }
 
-// GetDirSize returns the total size of a directory
-func GetDirSize(path string) (int64, error) {
+// getDirSize returns the total size of a directory
+func getDirSize(path string) (int64, error) {
 	var size int64
 	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
 		if !info.IsDir() {

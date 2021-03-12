@@ -1,24 +1,23 @@
 # -- build dependencies with alpine --
-FROM golang:alpine AS builder
+FROM golang:1.16.2-alpine3.13 AS builder
 
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \
     GOOS=linux \
-    GOARCH=amd64 \
-    shorturl_host=0.0.0.0
+    GOARCH=amd64
 
 WORKDIR /build
 
 COPY . .
 
 RUN go env -w GOPROXY=https://goproxy.cn,direct && \
-    go build -ldflags "-s -w -X main.built=$(date -u '+%Y-%m-%dT%H:%M:%SZ')" -o shorturl .
+    go build -ldflags "-s -w" -o tdi .
 
 # run application with a small image
 FROM scratch
 
-COPY --from=builder /build/shorturl /bin/
+COPY --from=builder /build/tdi /bin/
 
-EXPOSE 16001
+EXPOSE 13145
 
-ENTRYPOINT ["shorturl"]
+ENTRYPOINT ["tdi", "-d", "/tdi"]
