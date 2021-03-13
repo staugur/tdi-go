@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -9,6 +10,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"tcw.im/ufc"
 )
 
 var spaceReg = regexp.MustCompile(`\s+`)
@@ -63,7 +66,12 @@ func diskRate(path string) (percent int, err error) {
 
 // memRate returns system memory usage
 func memRate() (percent float64, err error) {
-	raw, err := ioutil.ReadFile("/proc/meminfo")
+	f := "/proc/meminfo"
+	if !ufc.IsFile(f) {
+		err = errors.New("not found meminfo")
+		return
+	}
+	raw, err := ioutil.ReadFile(f)
 	if err != nil {
 		return
 	}
@@ -95,7 +103,12 @@ func memRate() (percent float64, err error) {
 
 // loadStat return load value in 5 minutes(float)
 func loadStat() (loadavg5 float64, err error) {
-	raw, err := ioutil.ReadFile("/proc/loadavg")
+	f := "/proc/loadavg"
+	if !ufc.IsFile(f) {
+		err = errors.New("not found loadavg")
+		return
+	}
+	raw, err := ioutil.ReadFile(f)
 	if err != nil {
 		return
 	}
