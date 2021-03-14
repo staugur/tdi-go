@@ -1,8 +1,9 @@
+// web api view
+
 package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"runtime"
@@ -16,7 +17,27 @@ func router(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Server", "tdi/go")
 	w.Header().Set("Content-Type", "application/json")
 	if strings.HasPrefix(path, "/ping") {
+		if r.Method != "GET" {
+			errView405(w)
+			return
+		}
+		err := signatureRequired(r)
+		if err != nil {
+			errView(w, err)
+			return
+		}
 		pingView(w, r)
+	} else if strings.HasPrefix(path, "/download") {
+		if r.Method != "POST" {
+			errView405(w)
+			return
+		}
+		err := signatureRequired(r)
+		if err != nil {
+			errView(w, err)
+			return
+		}
+		downloadView(w, r)
 	} else {
 		errView404(w)
 	}
@@ -56,10 +77,12 @@ func pingView(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func errView500(w http.ResponseWriter, err error) {
-	fmt.Fprintf(w, `{"code":500,"msg":"%s"}`, err.Error())
-}
-
-func errView404(w http.ResponseWriter) {
-	w.Write([]byte(`{"code":404,"msg":"not found page"}`))
+func downloadView(w http.ResponseWriter, r *http.Request) {
+	data := make(map[string]string)
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		errView400(w)
+		return
+	}
+	log.Println(data)
 }

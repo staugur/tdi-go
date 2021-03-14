@@ -136,8 +136,15 @@ func handle() {
 		port = uint(envport)
 	}
 
+	if !noclean {
+		log.Println("no clean")
+		go cleanDownload()
+	}
+
 	http.HandleFunc("/", router)
 	listen := fmt.Sprintf("%s:%d", host, port)
 	log.Println("HTTP listen on " + listen)
 	log.Fatal(http.ListenAndServe(listen, nil))
 }
+
+func cleanDownload() {}

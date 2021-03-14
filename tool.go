@@ -1,20 +1,32 @@
+// common tools
+
 package main
 
 import (
+	"archive/tar"
+	"crypto/sha1"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"tcw.im/ufc"
 )
 
 var spaceReg = regexp.MustCompile(`\s+`)
+
+func nowTimestamp() int64 {
+	return time.Now().Unix()
+}
 
 func runCmd(name string, args ...string) (exitCode int, out string, err error) {
 	cmd := exec.Command(name, args...)
@@ -30,8 +42,8 @@ type disk struct {
 }
 
 // diskInfo returns the usage information of the disk where a directory is located
-func diskInfo(path string) (info disk, err error) {
-	code, out, err := runCmd("df", "--output=size,used,avail,pcent", path)
+func diskInfo(dirpath string) (info disk, err error) {
+	code, out, err := runCmd("df", "--output=size,used,avail,pcent", dirpath)
 	if code != 0 || err != nil {
 		return
 	}
@@ -56,8 +68,8 @@ func diskInfo(path string) (info disk, err error) {
 }
 
 // diskRate returns the usage rate of the disk where the directory is located
-func diskRate(path string) (percent int, err error) {
-	info, err := diskInfo(path)
+func diskRate(dirpath string) (percent int, err error) {
+	info, err := diskInfo(dirpath)
 	if err != nil {
 		return
 	}
@@ -117,13 +129,83 @@ func loadStat() (loadavg5 float64, err error) {
 }
 
 // getDirSize returns the total size of a directory
-func getDirSize(path string) (int64, error) {
+func getDirSize(dirpath string) (int64, error) {
 	var size int64
-	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+	err := filepath.Walk(dirpath, func(_ string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
 			size += info.Size()
 		}
 		return err
 	})
 	return size, err
+}
+
+// makeTarFile compress all files in a directory
+func makeTarFile(tarFilename, tarPath string, exclude []string) (err error) {
+	// 创建文件
+	fw, err := os.Create(tarFilename)
+	if err != nil {
+		return
+	}
+	defer fw.Close()
+
+	// 创建 Tar.Writer 结构
+	tw := tar.NewWriter(fw)
+	defer tw.Close()
+
+	// 递归处理目录及目录下的所有文件和目录
+	return filepath.Walk(tarPath, func(fileName string, fi os.FileInfo, err error) error {
+		// 因为这个闭包会返回个 error ，所以先要处理一下这个
+		if err != nil {
+			return err
+		}
+
+		// 如果文件名后缀（如 .gz .xxx）在排除列表中，则不压缩
+		if ufc.StrInSlice(path.Ext(fileName), exclude) {
+			return nil
+		}
+
+		// 判断下文件是否是标准文件，如果不是就不处理了，如：目录
+		if !fi.Mode().IsRegular() {
+			return nil
+		}
+
+		// 这里就不需要我们自己再 os.Stat 了，它已经做好了，我们直接使用 fi 即可
+		hdr, err := tar.FileInfoHeader(fi, "")
+		if err != nil {
+			return err
+		}
+
+		// 处理下 hdr 中的 Name，因为默认文件名不带路径，覆盖并去除首部/
+		hdr.Name = strings.TrimPrefix(fileName, string(filepath.Separator))
+
+		// 写入文件信息
+		if err := tw.WriteHeader(hdr); err != nil {
+			return err
+		}
+
+		// 打开文件
+		fr, err := os.Open(fileName)
+		if err != nil {
+			return err
+		}
+		defer fr.Close()
+
+		// copy 文件数据到 tw
+		_, err = io.Copy(tw, fr)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func SHA1(text string) string {
+	if text == "" {
+		return ""
+	}
+	h := sha1.New()
+	h.Write([]byte(text))
+	return hex.EncodeToString(h.Sum(nil))
 }
