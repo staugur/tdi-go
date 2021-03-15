@@ -32,12 +32,16 @@ type pin struct {
 }
 
 func errView(w http.ResponseWriter, err error) {
-	fmt.Fprintf(w, `{"code":-1,"msg":"%s"}`, err.Error())
+	fmt.Fprintf(
+		w, `{"code":-1,"msg":"%s"}`, strings.ReplaceAll(err.Error(), `"`, `'`),
+	)
 }
 
 func errView500(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprintf(w, `{"code":500,"msg":"%s"}`, err.Error())
+	fmt.Fprintf(
+		w, `{"code":500,"msg":"%s"}`, strings.ReplaceAll(err.Error(), `"`, `'`),
+	)
 }
 
 func errView400(w http.ResponseWriter) {
