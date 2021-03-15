@@ -24,6 +24,11 @@ import (
 
 var spaceReg = regexp.MustCompile(`\s+`)
 
+func cwd() string {
+	pwd, _ := os.Getwd()
+	return pwd
+}
+
 func nowTimestamp() int64 {
 	return time.Now().Unix()
 }
@@ -128,77 +133,79 @@ func loadStat() (loadavg5 float64, err error) {
 	return strconv.ParseFloat(s, 64)
 }
 
-// getDirSize returns the total size of a directory
-func getDirSize(dirpath string) (int64, error) {
-	var size int64
-	err := filepath.Walk(dirpath, func(_ string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			size += info.Size()
-		}
-		return err
-	})
-	return size, err
-}
-
-// makeTarFile compress all files in a directory
+// makeTarFile compress all files in a directory.
+// Automatically delete after compression.
 func makeTarFile(tarFilename, tarPath string, exclude []string) (err error) {
-	// 创建文件
+	if !strings.HasSuffix(tarFilename, ".tar") || !ufc.IsDir(tarPath) {
+		return errors.New("make tar: invalid param")
+	}
 	fw, err := os.Create(tarFilename)
 	if err != nil {
 		return
 	}
 	defer fw.Close()
 
-	// 创建 Tar.Writer 结构
+	// create Tar.Writer structure
 	tw := tar.NewWriter(fw)
 	defer tw.Close()
 
-	// 递归处理目录及目录下的所有文件和目录
+	// Recursively process all files in the directory
 	return filepath.Walk(tarPath, func(fileName string, fi os.FileInfo, err error) error {
-		// 因为这个闭包会返回个 error ，所以先要处理一下这个
 		if err != nil {
 			return err
 		}
 
-		// 如果文件名后缀（如 .gz .xxx）在排除列表中，则不压缩
+		// if the filename suffix (such as .gz .xxx) is in the exclusion list,
+		// do not compress
 		if ufc.StrInSlice(path.Ext(fileName), exclude) {
 			return nil
 		}
 
-		// 判断下文件是否是标准文件，如果不是就不处理了，如：目录
+		// if not is a standard file, do not process it, such as: directory
 		if !fi.Mode().IsRegular() {
 			return nil
 		}
 
-		// 这里就不需要我们自己再 os.Stat 了，它已经做好了，我们直接使用 fi 即可
 		hdr, err := tar.FileInfoHeader(fi, "")
 		if err != nil {
 			return err
 		}
 
-		// 处理下 hdr 中的 Name，因为默认文件名不带路径，覆盖并去除首部/
-		hdr.Name = strings.TrimPrefix(fileName, string(filepath.Separator))
-
-		// 写入文件信息
+		// write file information
 		if err := tw.WriteHeader(hdr); err != nil {
 			return err
 		}
 
-		// 打开文件
 		fr, err := os.Open(fileName)
 		if err != nil {
 			return err
 		}
-		defer fr.Close()
 
-		// copy 文件数据到 tw
 		_, err = io.Copy(tw, fr)
 		if err != nil {
 			return err
 		}
 
+		fr.Close()
+		os.Remove(fileName)
+
 		return nil
 	})
+}
+
+// formatSize: format byte size as kilobytes, megabytes, gigabytes
+func formatSize(b int64) string {
+	const unit = 1000
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB",
+		float64(b)/float64(div), "kMGTPE"[exp])
 }
 
 func SHA1(text string) string {

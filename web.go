@@ -9,7 +9,27 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
+
+type download struct {
+	UifnKey        string  `json:"uifnKey"`
+	Site           uint8   `json:"site"`
+	BoardId        string  `json:"board_id"`
+	Uifn           string  `json:"uifn"`
+	Ctime          uint    `json:"ctime"`
+	Etime          uint    `json:"etime"`
+	BoardPins      string  `json:"board_pins"`
+	downloads      []pin   // Go type after board_pins parsing
+	MAXBoardNumber uint    `json:"MAX_BOARD_NUMBER"`
+	CallbackURL    string  `json:"CALLBACK_URL"`
+	DiskLimit      float64 `json:"DISKLIMIT"`
+}
+
+type pin struct {
+	Name string `json:"imgName"`
+	URL  string `json:"imgUrl"`
+}
 
 func errView(w http.ResponseWriter, err error) {
 	fmt.Fprintf(w, `{"code":-1,"msg":"%s"}`, err.Error())
@@ -74,4 +94,39 @@ func checkSignature(signature, timestamp, nonce string) bool {
 	sort.Strings(args)
 	mysig := SHA1(strings.Join(args, ""))
 	return mysig == signature
+}
+
+func httpGet(url string, headers map[string]string) (resp *http.Response, err error) {
+	var client = &http.Client{Timeout: time.Second * 5}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+
+	for k, v := range headers {
+		req.Header.Add(k, v)
+	}
+
+	return client.Do(req)
+}
+
+func httpPost(url string, data map[string]string) (resp *http.Response, err error) {
+	var post http.Request
+	post.ParseForm()
+	for k, v := range data {
+		post.Form.Add(k, v)
+	}
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	req, err := http.NewRequest(
+		"POST", url, strings.NewReader(post.Form.Encode()),
+	)
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("User-Agent", "tdi/go")
+
+	return client.Do(req)
 }

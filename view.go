@@ -3,38 +3,32 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
-	"log"
+	"errors"
 	"net/http"
 	"runtime"
-	"strings"
 	"time"
 )
 
 func router(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
-	log.Println(path)
 	w.Header().Set("Server", "tdi/go")
 	w.Header().Set("Content-Type", "application/json")
-	if strings.HasPrefix(path, "/ping") {
+	err := signatureRequired(r)
+	if err != nil {
+		errView(w, err)
+		return
+	}
+	if path == "/ping" {
 		if r.Method != "GET" {
 			errView405(w)
 			return
 		}
-		err := signatureRequired(r)
-		if err != nil {
-			errView(w, err)
-			return
-		}
 		pingView(w, r)
-	} else if strings.HasPrefix(path, "/download") {
+	} else if path == "/download" {
 		if r.Method != "POST" {
 			errView405(w)
-			return
-		}
-		err := signatureRequired(r)
-		if err != nil {
-			errView(w, err)
 			return
 		}
 		downloadView(w, r)
@@ -69,6 +63,9 @@ func pingView(w http.ResponseWriter, r *http.Request) {
 	info["timestamp"] = time.Now().Unix()
 	info["email"] = alert
 	info["lang"] = runtime.Version()
+	info["rqcount"] = -1
+	info["rqfailed"] = -1
+	info["goroutine"] = runtime.NumGoroutine()
 
 	data, err := json.Marshal(info)
 	if err != nil {
@@ -78,11 +75,37 @@ func pingView(w http.ResponseWriter, r *http.Request) {
 }
 
 func downloadView(w http.ResponseWriter, r *http.Request) {
-	data := make(map[string]string)
-	err := json.NewDecoder(r.Body).Decode(&data)
+	data := &download{}
+	err := json.NewDecoder(r.Body).Decode(data)
 	if err != nil {
 		errView400(w)
 		return
 	}
-	log.Println(data)
+	if data.UifnKey == "" || data.Uifn == "" || data.BoardId == "" ||
+		data.BoardPins == "" || data.Ctime == 0 || data.Etime == 0 {
+		errView(w, errors.New("invalid param"))
+		return
+	}
+
+	pins := make([]pin, 0)
+	json.Unmarshal([]byte(data.BoardPins), &pins)
+	if len(pins) < 1 {
+		errView(w, errors.New("empty download"))
+		return
+	}
+	data.downloads = pins
+
+	// write to redis
+	dumps, err := json.Marshal(data)
+	if err != nil {
+		errView(w, err)
+		return
+	}
+	ctx := context.Background()
+	rc.Set(ctx, data.Uifn, dumps, 7*24*time.Hour)
+
+	go downloadBoard(data)
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(`{"code":0,"msg":"downloading"}`))
 }

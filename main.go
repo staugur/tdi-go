@@ -6,8 +6,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
+	"path/filepath"
 	"strconv"
 
+	"github.com/go-redis/redis/v8"
 	"tcw.im/ufc"
 )
 
@@ -19,13 +22,15 @@ var (
 
 	noclean bool // if true, do not delete download file, otherwise, auto delete
 
-	dir    string // download dir
+	dir    string // download absolute path
 	host   string
 	port   uint
 	rawurl string // redis connect url
 	token  string
 	status string
 	alert  string // alert email
+
+	rc *redis.Client
 )
 
 func init() {
@@ -84,7 +89,7 @@ Flags:
       --host            http listen host (default "0.0.0.0", env)
       --port            http listen port (default 13145, env)
   -d, --dir             download base directory (required)
-  -r, --redis           redis url, (required, env)
+  -r, --redis           redis url, DSN-Style (required, env)
                         format: redis://[:<password>@]host[:port/db]
   -t, --token           password to verify identity (required, env)
   -s, --status          set this service status: ready or tardy, (default ready)
@@ -94,14 +99,23 @@ Flags:
 }
 
 func handle() {
-	if dir == "" || !ufc.IsDir(dir) {
+	if dir == "" {
+		dir = os.Getenv("tdi_dir")
+	}
+	if dir == "" {
 		fmt.Println("invalid dir")
 		os.Exit(127)
 	}
+	if !ufc.IsDir(dir) {
+		ufc.CreateDir(dir)
+	}
+	if !path.IsAbs(dir) {
+		dir = filepath.Join(cwd(), dir)
+	}
 	if rawurl == "" {
-		rawurl = os.Getenv("tdi_redis_url")
+		rawurl = os.Getenv("tdi_redis")
 		if rawurl == "" {
-			fmt.Println("invalid environment tdi_redis_url")
+			fmt.Println("invalid environment tdi_redis")
 			os.Exit(128)
 		}
 	}
@@ -114,6 +128,9 @@ func handle() {
 	}
 	if alert == "" {
 		alert = os.Getenv("tdi_alert")
+	}
+	if status == "" {
+		status = os.Getenv("tdi_status")
 	}
 	if status != "tardy" {
 		status = "ready"
@@ -136,15 +153,21 @@ func handle() {
 		port = uint(envport)
 	}
 
+	// init redis connect client
+	opt, err := redis.ParseURL(rawurl)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	rc = redis.NewClient(opt)
+
 	if !noclean {
-		log.Println("no clean")
 		go cleanDownload()
 	}
 
+	// view.go
 	http.HandleFunc("/", router)
 	listen := fmt.Sprintf("%s:%d", host, port)
 	log.Println("HTTP listen on " + listen)
 	log.Fatal(http.ListenAndServe(listen, nil))
 }
-
-func cleanDownload() {}
