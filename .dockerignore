@@ -1,0 +1,7 @@
+.git
+.github/
+LICENSE
+Dockerfile
+Makefile
+README
+bin/

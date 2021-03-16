@@ -101,8 +101,7 @@ func downloadView(w http.ResponseWriter, r *http.Request) {
 		errView(w, err)
 		return
 	}
-	ctx := context.Background()
-	rc.Set(ctx, data.Uifn, dumps, 7*24*time.Hour)
+	rc.Set(context.Background(), data.Uifn, dumps, 7*24*time.Hour)
 
 	go downloadBoard(data)
 

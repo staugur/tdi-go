@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"tcw.im/ufc"
@@ -83,8 +84,8 @@ func main() {
 		fmt.Printf("Version:     %s\n", version)
 		fmt.Printf("Go version:  %s\n", strings.TrimLeft(runtime.Version(), "go"))
 		fmt.Printf("OS/Arch:     %s/%s\n", runtime.GOOS, runtime.GOARCH)
-		fmt.Printf("Disk Rate:   %s\n", dp)
-		fmt.Printf("Memory Rate: %s\n", mp)
+		fmt.Printf("Disk Rate:   %.2f%%\n", dp)
+		fmt.Printf("Memory Rate: %.2f%%\n", mp)
 	} else {
 		handle()
 	}
@@ -177,7 +178,12 @@ func handle() {
 	rc = redis.NewClient(opt)
 
 	if !noclean {
-		go cleanDownload()
+		go func() {
+			for {
+				cleanDownload(12)
+				time.Sleep(time.Minute)
+			}
+		}()
 	}
 
 	// view.go

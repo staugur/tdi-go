@@ -3,10 +3,14 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -125,9 +129,65 @@ func downloadBoard(data *download) {
 	fmt.Println("download over, success")
 }
 
-func cleanDownload() {
+// perform a cleanup
+func cleanDownload(hours int) {
 	log.Println("clean download")
-	//for {
-	//	time.Sleep(time.Minute)
-	//}
+	dfs, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	for _, f := range dfs {
+		if !f.Mode().IsRegular() {
+			continue
+		}
+		n := f.Name()
+		if path.Ext(n) != ".tar" {
+			continue
+		}
+		ns := strings.Split(strings.TrimSuffix(n, path.Ext(n)), "_")
+		if len(ns) < 2 {
+			continue
+		}
+		aid := ns[0]
+		mst, err := strconv.Atoi(ns[1])
+		if err != nil {
+			continue
+		}
+		if aid != "hb" {
+			continue
+		}
+		// real process
+		ctime := mst / 1000
+		fctime := f.ModTime()
+		log.Println(fctime)
+		nt := nowTimestamp()
+		if (ctime + 60*60*hours) <= int(nt) {
+			// expired, clean and report
+			val, err := rc.Get(context.Background(), n).Result()
+			if err != nil {
+				continue
+			}
+
+			data := &download{}
+			err = json.Unmarshal([]byte(val), data)
+			if err != nil {
+				continue
+			}
+			body := make(map[string]string)
+			body["uifn"] = data.Uifn
+
+			resp, err := httpPost(data.CallbackURL+"?Action=SECOND_STATUS", body)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			text, err := ioutil.ReadAll(resp.Body)
+			resp.Body.Close()
+			if err != nil {
+				continue
+			}
+			os.Remove(n)
+			log.Printf("Update expired status for %s, resp is %s", n, string(text))
+		}
+	}
 }
