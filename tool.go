@@ -17,12 +17,21 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"tcw.im/ufc"
 )
 
 var spaceReg = regexp.MustCompile(`\s+`)
+
+type sysinfo struct {
+	Load5     float64 // 5,minute load averages
+	TotalRam  uint64  // total usable main memory size [kB]
+	FreeRam   uint64  // available memory size [kB]
+	SharedRam uint64  // amount of shared memory [kB]
+	BufferRam uint64  // memory used by buffers [kB]
+}
 
 func cwd() string {
 	pwd, _ := os.Getwd()
@@ -42,43 +51,40 @@ func runCmd(name string, args ...string) (exitCode int, out string, err error) {
 	return cmd.ProcessState.ExitCode(), string(data), nil
 }
 
-type disk struct {
-	total, used, available, percent int
-}
-
-// diskInfo returns the usage information of the disk where a directory is located
-func diskInfo(dirpath string) (info disk, err error) {
-	code, out, err := runCmd("df", "--output=size,used,avail,pcent", dirpath)
-	if code != 0 || err != nil {
-		return
-	}
-	di := spaceReg.Split(strings.TrimSpace(out), -1)
-	total, err := strconv.Atoi(di[4])
-	if err != nil {
-		return
-	}
-	used, err := strconv.Atoi(di[5])
-	if err != nil {
-		return
-	}
-	avai, err := strconv.Atoi(di[6])
-	if err != nil {
-		return
-	}
-	percent, err := strconv.Atoi(strings.TrimSuffix(di[7], "%"))
-	if err != nil {
-		return
-	}
-	return disk{total, used, avai, percent}, nil
-}
-
 // diskRate returns the usage rate of the disk where the directory is located
-func diskRate(dirpath string) (percent int, err error) {
-	info, err := diskInfo(dirpath)
+func diskRate(volumePath string) (percent float64, err error) {
+	var fs syscall.Statfs_t
+	err = syscall.Statfs(volumePath, &fs)
 	if err != nil {
 		return
 	}
-	return info.percent, nil
+	Size := fs.Blocks * uint64(fs.Bsize)
+	Free := fs.Bfree * uint64(fs.Bsize)
+	Used := Size - Free
+
+	pct := float64(Used) / float64(Size) * 100
+	return strconv.ParseFloat(fmt.Sprintf("%.2f", pct), 64)
+}
+
+func newSysinfo() (sis *sysinfo, err error) {
+	si := new(syscall.Sysinfo_t)
+	err = syscall.Sysinfo(si)
+	if err != nil {
+		return
+	}
+	fmt.Printf("%+v\n", si)
+
+	unit := uint64(si.Unit) * 1024 // kB
+	scale := 65536.0               // magic
+
+	sis.Load5 = float64(si.Loads[1]) / scale
+
+	sis.TotalRam = uint64(si.Totalram) / unit
+	sis.FreeRam = uint64(si.Freeram) / unit
+	sis.SharedRam = uint64(si.Sharedram) / unit
+	sis.BufferRam = uint64(si.Bufferram) / unit
+
+	return
 }
 
 // memRate returns system memory usage
@@ -112,6 +118,7 @@ func memRate() (percent float64, err error) {
 		}
 		mem[k] = s
 	}
+	fmt.Printf("%+v\n", mem)
 	used := mem["MemTotal"] - mem["MemFree"] - mem["Buffers"] - mem["Cached"]
 	percent = float64(used) / float64(mem["MemTotal"]) * 100
 	p := fmt.Sprintf("%.2f", percent)

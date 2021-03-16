@@ -8,7 +8,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/go-redis/redis/v8"
 	"tcw.im/ufc"
@@ -19,6 +21,7 @@ const version = "0.1.0"
 var (
 	h bool
 	v bool
+	i bool
 
 	noclean bool // if true, do not delete download file, otherwise, auto delete
 
@@ -41,6 +44,9 @@ func init() {
 
 	flag.BoolVar(&v, "v", false, "show version and exit")
 	flag.BoolVar(&v, "version", false, "show version and exit")
+
+	flag.BoolVar(&i, "i", false, "")
+	flag.BoolVar(&i, "info", false, "")
 
 	flag.BoolVar(&noclean, "noclean", false, "")
 
@@ -71,6 +77,16 @@ func main() {
 		flag.Usage()
 	} else if v {
 		fmt.Println(version)
+	} else if i {
+		dp, _ := diskRate(cwd())
+		mp, _ := memRate()
+		//s, _ := newSysinfo()
+		//fmt.Printf("%+v\n", s)
+		fmt.Printf("Version: %s\n", version)
+		fmt.Printf("Go version:  %s\n", strings.TrimLeft(runtime.Version(), "go"))
+		fmt.Printf("OS/Arch:     %s/%s\n", runtime.GOOS, runtime.GOARCH)
+		fmt.Printf("Disk Rate: %f\n", dp)
+		fmt.Printf("Memory Rate: %f\n", mp)
 	} else {
 		handle()
 	}
@@ -85,6 +101,7 @@ Git to https://github.com/staugur/tdi-go/
 Flags:
   -h, --help            show this help message and exit
   -v, --version         show cli version and exit
+  -i, --info            show version and system info
       --noclean         do not automatically clean up download files (env)
       --host            http listen host (default "0.0.0.0", env)
       --port            http listen port (default 13145, env)

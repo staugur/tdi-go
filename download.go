@@ -29,7 +29,7 @@ func downloadBoard(data *download) {
 		allowDown = false
 		readme.WriteString(err.Error())
 	}
-	if float64(dp) > data.DiskLimit {
+	if dp > data.DiskLimit {
 		allowDown = false
 		readme.WriteString("disk usage is too high")
 	}
@@ -71,7 +71,7 @@ func downloadBoard(data *download) {
 				return
 			}
 			dp, _ := diskRate(dir)
-			if float64(dp) > data.DiskLimit {
+			if dp > data.DiskLimit {
 				readme.WriteString("disk usage is too high")
 				return
 			}
