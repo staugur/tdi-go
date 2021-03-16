@@ -16,7 +16,7 @@ RUN go env -w GOPROXY=https://goproxy.cn,direct && \
 # run application with a small image
 FROM scratch
 
-COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 COPY --from=builder /build/tdi /bin/
 
