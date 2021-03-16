@@ -19,7 +19,7 @@ import (
 )
 
 func downloadBoard(data *download) {
-	log.Printf("download start for %s in %s\n", data.Uifn, cwd())
+	log.Printf("download start for %s in %s\n", data.Uifn, dir)
 
 	pins := data.downloads
 	maxs := int(data.MAXBoardNumber)
