@@ -80,13 +80,11 @@ func main() {
 	} else if i {
 		dp, _ := diskRate(cwd())
 		mp, _ := memRate()
-		//s, _ := newSysinfo()
-		//fmt.Printf("%+v\n", s)
-		fmt.Printf("Version: %s\n", version)
+		fmt.Printf("Version:     %s\n", version)
 		fmt.Printf("Go version:  %s\n", strings.TrimLeft(runtime.Version(), "go"))
 		fmt.Printf("OS/Arch:     %s/%s\n", runtime.GOOS, runtime.GOARCH)
-		fmt.Printf("Disk Rate: %f\n", dp)
-		fmt.Printf("Memory Rate: %f\n", mp)
+		fmt.Printf("Disk Rate:   %s\n", dp)
+		fmt.Printf("Memory Rate: %s\n", mp)
 	} else {
 		handle()
 	}

@@ -58,7 +58,7 @@ func downloadBoard(data *download) {
 	}
 	headers := make(map[string]string)
 	headers["Referer"] = ref
-	headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36"
+	headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:86.0) Gecko/20100101 Firefox/86.0"
 
 	// start to download
 	nt := nowTimestamp()
@@ -127,8 +127,7 @@ func downloadBoard(data *download) {
 
 func cleanDownload() {
 	log.Println("clean download")
-	for {
-		log.Println("cleaning")
-		time.Sleep(time.Minute)
-	}
+	//for {
+	//	time.Sleep(time.Minute)
+	//}
 }
