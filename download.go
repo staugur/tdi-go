@@ -35,16 +35,20 @@ func downloadBoard(data *download) {
 	}
 	if dp > data.DiskLimit {
 		allowDown = false
-		readme.WriteString("disk usage is too high")
+		readme.WriteString("disk usage is too high\n")
 	}
 
-	os.Chdir(dir)
+	err = os.Chdir(dir)
+	if err != nil {
+		log.Println(err.Error())
+	}
 	err = ufc.CreateDir(data.BoardId)
 	if err != nil {
 		allowDown = false
-		readme.WriteString("create board directory failed")
+		log.Printf("create board directory failed: %s\n", err.Error())
+		return
 	}
-	// Root directory of current and subsequent coroutines
+	// root directory of current and subsequent coroutines
 	os.Chdir(data.BoardId)
 
 	// if allowDown is false, abort the program
@@ -76,7 +80,7 @@ func downloadBoard(data *download) {
 			}
 			dp, _ := diskRate(dir)
 			if dp > data.DiskLimit {
-				readme.WriteString("disk usage is too high")
+				readme.WriteString("disk usage is too high\n")
 				return
 			}
 			resp, err := httpGet(p.URL, headers)
@@ -131,7 +135,6 @@ func downloadBoard(data *download) {
 
 // perform a cleanup
 func cleanDownload(hours int) {
-	log.Println("clean download")
 	dfs, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return
@@ -159,7 +162,7 @@ func cleanDownload(hours int) {
 		// real process
 		ctime := mst / 1000
 		fctime := f.ModTime()
-		log.Println(fctime)
+		log.Println(fctime.Unix())
 		nt := nowTimestamp()
 		if (ctime + 60*60*hours) <= int(nt) {
 			// expired, clean and report
