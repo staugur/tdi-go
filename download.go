@@ -87,7 +87,10 @@ func downloadBoard(data *download) {
 				readme.WriteString("disk usage is too high\n")
 				return
 			}
-			resp, err := httpGet(p.URL, headers)
+			resp, err := httpGet(p.URL, headers, 10*time.Second)
+			if strings.Contains(err.Error(), "Client.Timeout") {
+				resp, err = httpGet(p.URL, headers, 20*time.Second)
+			}
 			if err != nil {
 				readme.WriteString(err.Error() + "\n")
 				return
@@ -99,7 +102,7 @@ func downloadBoard(data *download) {
 				return
 			}
 			ioutil.WriteFile(p.Name, body, 0755)
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(500 * time.Millisecond)
 		}(p)
 	}
 	wg.Wait()

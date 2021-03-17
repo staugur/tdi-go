@@ -65,6 +65,7 @@ func pingView(w http.ResponseWriter, r *http.Request) {
 	info["lang"] = runtime.Version()
 	info["rqcount"] = -1
 	info["rqfailed"] = -1
+	info["goroutine"] = runtime.NumGoroutine()
 
 	data, err := json.Marshal(info)
 	if err != nil {

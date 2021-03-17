@@ -100,8 +100,8 @@ func checkSignature(signature, timestamp, nonce string) bool {
 	return mysig == signature
 }
 
-func httpGet(url string, headers map[string]string) (resp *http.Response, err error) {
-	var client = &http.Client{Timeout: time.Second * 5}
+func httpGet(url string, headers map[string]string, timeout time.Duration) (resp *http.Response, err error) {
+	var client = &http.Client{Timeout: timeout}
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -122,7 +122,7 @@ func httpPost(url string, data map[string]string) (resp *http.Response, err erro
 		post.Form.Add(k, v)
 	}
 
-	client := &http.Client{Timeout: 5 * time.Second}
+	client := &http.Client{Timeout: 10 * time.Second}
 	req, err := http.NewRequest(
 		"POST", url, strings.NewReader(post.Form.Encode()),
 	)

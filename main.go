@@ -87,7 +87,6 @@ func main() {
 		mp, _ := memRate()
 		fmt.Printf("Version:     %s\n", version)
 		fmt.Printf("Go version:  %s\n", strings.TrimLeft(runtime.Version(), "go"))
-		fmt.Printf("Goroutine:   %d\n", runtime.NumGoroutine())
 		fmt.Printf("OS/Arch:     %s/%s\n", runtime.GOOS, runtime.GOARCH)
 		fmt.Printf("Disk Rate:   %.2f%%\n", dp)
 		fmt.Printf("Memory Rate: %.2f%%\n", mp)
