@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path"
 	"runtime"
@@ -87,11 +88,16 @@ func downloadBoard(data *download) {
 				readme.WriteString("disk usage is too high\n")
 				return
 			}
-			resp, err := httpGet(p.URL, headers, 10*time.Second)
-			if err != nil {
-				if strings.Contains(err.Error(), "Client.Timeout") {
-					resp, err = httpGet(p.URL, headers, 20*time.Second)
+			var retry time.Duration = 1
+			var resp *http.Response
+			var err error
+			for retry <= 3 {
+				log.Println(retry)
+				resp, err = httpGet(p.URL, headers, retry*10*time.Second)
+				if err == nil {
+					break
 				}
+				retry++
 			}
 			if err != nil {
 				readme.WriteString(err.Error() + "\n")
