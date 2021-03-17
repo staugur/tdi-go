@@ -32,7 +32,7 @@ func downloadBoard(data *download) {
 	dp, err := diskRate(dir)
 	if err != nil {
 		allowDown = false
-		readme.WriteString(err.Error())
+		readme.WriteString(err.Error() + "\n")
 	}
 	if dp > data.DiskLimit {
 		allowDown = false
@@ -88,8 +88,10 @@ func downloadBoard(data *download) {
 				return
 			}
 			resp, err := httpGet(p.URL, headers, 10*time.Second)
-			if strings.Contains(err.Error(), "Client.Timeout") {
-				resp, err = httpGet(p.URL, headers, 20*time.Second)
+			if err != nil {
+				if strings.Contains(err.Error(), "Client.Timeout") {
+					resp, err = httpGet(p.URL, headers, 20*time.Second)
+				}
 			}
 			if err != nil {
 				readme.WriteString(err.Error() + "\n")
@@ -137,7 +139,7 @@ func downloadBoard(data *download) {
 		return
 	}
 	defer resp.Body.Close()
-	log.Println("download over, success")
+	log.Println("download over, successfully")
 }
 
 // perform a cleanup

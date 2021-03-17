@@ -11,6 +11,24 @@ Node.js版本的仓库地址是：https://github.com/staugur/tdi-node
 
 ## 安装
 
+仅支持 Linux 系统！
+
+### 使用 golang 安装
+
+go1.15+, go module(on)
+
+```go
+go get -u tcw.im/tdi
+mv ~/go/bin/tdi /bin/tdi
+tdi -i
+```
+
+### 使用 docker 安装
+
+```bash
+docker pull staugur/tdi-go
+```
+
 [点击查看详细文档](https://docs.saintic.com/tdi-go/)
 
 ## Nginx参考

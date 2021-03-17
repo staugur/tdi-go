@@ -1,4 +1,4 @@
-module tdi
+module tcw.im/tdi
 
 go 1.15
 
