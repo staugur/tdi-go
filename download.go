@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -40,7 +41,7 @@ func downloadBoard(data *download) {
 
 	err = os.Chdir(dir)
 	if err != nil {
-		log.Println(err.Error())
+		log.Println(err.Error() + "\n")
 	}
 	err = ufc.CreateDir(data.BoardId)
 	if err != nil {
@@ -70,6 +71,9 @@ func downloadBoard(data *download) {
 
 	// start to download
 	nt := nowTimestamp()
+	if len(pins) > 100 {
+		runtime.GOMAXPROCS(len(pins)/100 + runtime.NumGoroutine())
+	}
 	var wg sync.WaitGroup
 	for _, p := range pins {
 		wg.Add(1)
@@ -85,17 +89,17 @@ func downloadBoard(data *download) {
 			}
 			resp, err := httpGet(p.URL, headers)
 			if err != nil {
-				readme.WriteString(err.Error())
+				readme.WriteString(err.Error() + "\n")
 				return
 			}
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				readme.WriteString(err.Error())
+				readme.WriteString(err.Error() + "\n")
 				return
 			}
 			ioutil.WriteFile(p.Name, body, 0755)
-			time.Sleep(50 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 		}(p)
 	}
 	wg.Wait()
@@ -130,7 +134,7 @@ func downloadBoard(data *download) {
 		return
 	}
 	defer resp.Body.Close()
-	fmt.Println("download over, success")
+	log.Println("download over, success")
 }
 
 // perform a cleanup
@@ -159,12 +163,12 @@ func cleanDownload(hours int) {
 		if aid != "hb" {
 			continue
 		}
-		// real process
+		// enter the processing flow
 		ctime := mst / 1000
-		fctime := f.ModTime()
-		log.Println(fctime.Unix())
+		fctime := f.ModTime().Unix()
+		ltime := 60 * 60 * hours
 		nt := nowTimestamp()
-		if (ctime + 60*60*hours) <= int(nt) {
+		if (ctime+ltime) <= int(nt) && (fctime+int64(ltime)) <= nt {
 			// expired, clean and report
 			val, err := rc.Get(context.Background(), n).Result()
 			if err != nil {

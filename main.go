@@ -79,7 +79,11 @@ func main() {
 	} else if v {
 		fmt.Println(version)
 	} else if i {
-		dp, _ := diskRate(cwd())
+		checkDir := dir
+		if checkDir == "" {
+			checkDir = cwd()
+		}
+		dp, _ := diskRate(checkDir)
 		mp, _ := memRate()
 		fmt.Printf("Version:     %s\n", version)
 		fmt.Printf("Go version:  %s\n", strings.TrimLeft(runtime.Version(), "go"))

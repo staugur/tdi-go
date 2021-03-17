@@ -13,16 +13,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
+	"tcw.im/go-disk-usage/du"
 	"tcw.im/ufc"
 )
-
-var spaceReg = regexp.MustCompile(`\s+`)
 
 func cwd() string {
 	pwd, _ := os.Getwd()
@@ -35,16 +32,7 @@ func nowTimestamp() int64 {
 
 // diskRate returns the usage rate of the disk where the directory is located
 func diskRate(volumePath string) (percent float64, err error) {
-	// golint: ignore UndeclaredImportedName
-	var fs syscall.Statfs_t // ignore: UndeclaredImportedName
-	err = syscall.Statfs(volumePath, &fs)
-	if err != nil {
-		return
-	}
-	Size := fs.Blocks * uint64(fs.Bsize)
-	Free := fs.Bfree * uint64(fs.Bsize)
-	Used := Size - Free
-	pct := float64(Used) / float64(Size) * 100
+	pct := du.DiskRate(volumePath) * 100
 	return strconv.ParseFloat(fmt.Sprintf("%.2f", pct), 64)
 }
 
