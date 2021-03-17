@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,24 +19,58 @@ import (
 	"tcw.im/ufc"
 )
 
+type strbuilder struct {
+	b strings.Builder
+}
+
+func (s strbuilder) WriteS(text string) {
+	s.b.WriteString(text + "\n")
+}
+
+func (s strbuilder) WriteE(err error) {
+	s.b.WriteString(err.Error() + "\n")
+}
+
+func (s strbuilder) String() string {
+	return s.b.String()
+}
+
+func (s strbuilder) Len() int {
+	return s.b.Len()
+}
+
+func (s strbuilder) FlushReadme() error {
+	return ioutil.WriteFile("README.txt", []byte(s.String()), 0755)
+}
+
 func downloadBoard(data *download) {
 	log.Printf("download start for %s in %s\n", data.Uifn, dir)
 
 	pins := data.downloads
 	maxs := int(data.MAXBoardNumber)
+	readme := strbuilder{}
+	var allowDown bool = true
 	if len(pins) > maxs {
 		pins = pins[:maxs]
 	}
-	var readme strings.Builder
-	var allowDown bool = true
+
+	var gs int // Divide pins into some number parts
+	var maxLimit int = 20
+	if len(pins) > maxLimit {
+		gs = len(pins) / maxLimit
+		//runtime.GOMAXPROCS(gs + runtime.NumGoroutine())
+	} else {
+		gs = 1
+	}
+
 	dp, err := diskRate(dir)
 	if err != nil {
 		allowDown = false
-		readme.WriteString(err.Error() + "\n")
+		readme.WriteE(err)
 	}
 	if dp > data.DiskLimit {
 		allowDown = false
-		readme.WriteString("disk usage is too high\n")
+		readme.WriteS("disk usage is too high")
 	}
 
 	err = os.Chdir(dir)
@@ -53,12 +86,22 @@ func downloadBoard(data *download) {
 	// root directory of current and subsequent coroutines
 	os.Chdir(data.BoardId)
 
+	// split download pins
+	fmt.Printf("pin len:%d, gs:%d\n", len(pins), gs)
+	spins, err := splitPins(pins, gs)
+	if err != nil {
+		allowDown = false
+		readme.WriteE(err)
+	}
+
 	// if allowDown is false, abort the program
 	if !allowDown {
-		ioutil.WriteFile("README.txt", []byte(readme.String()), 0755)
+		readme.FlushReadme()
 		return
 	}
 
+	// start to download
+	nt := nowTimestamp()
 	// construct the request header
 	var ref string
 	if data.Site == 1 {
@@ -70,52 +113,53 @@ func downloadBoard(data *download) {
 	headers["Referer"] = ref
 	headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:86.0) Gecko/20100101 Firefox/86.0"
 
-	// start to download
-	nt := nowTimestamp()
-	if len(pins) > 100 {
-		runtime.GOMAXPROCS(len(pins)/100 + runtime.NumGoroutine())
-	}
 	var wg sync.WaitGroup
-	for _, p := range pins {
+	for _, sp := range spins {
 		wg.Add(1)
-		go func(p pin) {
+		// Download a set of pictures for each coroutine
+		go func(sp []pin) {
 			defer wg.Done()
-			if ufc.IsFile(p.Name) {
-				return
+			for _, p := range sp {
+				func(p pin) {
+					if ufc.IsFile(p.Name) {
+						return
+					}
+					dp, _ := diskRate(dir)
+					if dp > data.DiskLimit {
+						readme.WriteS("disk usage is too high")
+						return
+					}
+					var retry time.Duration = 1
+					var resp *http.Response
+					var err error
+					for retry <= 3 {
+						log.Println(retry)
+						resp, err = httpGet(p.URL, headers, retry*10*time.Second)
+						if err == nil {
+							break
+						}
+						retry++
+					}
+					if err != nil {
+						readme.WriteE(err)
+						return
+					}
+					defer resp.Body.Close()
+					body, err := ioutil.ReadAll(resp.Body)
+					if err != nil {
+						readme.WriteE(err)
+						return
+					}
+					ioutil.WriteFile(p.Name, body, 0755)
+					time.Sleep(10 * time.Millisecond)
+				}(p)
 			}
-			dp, _ := diskRate(dir)
-			if dp > data.DiskLimit {
-				readme.WriteString("disk usage is too high\n")
-				return
-			}
-			var retry time.Duration = 1
-			var resp *http.Response
-			var err error
-			for retry <= 3 {
-				log.Println(retry)
-				resp, err = httpGet(p.URL, headers, retry*10*time.Second)
-				if err == nil {
-					break
-				}
-				retry++
-			}
-			if err != nil {
-				readme.WriteString(err.Error() + "\n")
-				return
-			}
-			defer resp.Body.Close()
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				readme.WriteString(err.Error() + "\n")
-				return
-			}
-			ioutil.WriteFile(p.Name, body, 0755)
-			time.Sleep(500 * time.Millisecond)
-		}(p)
+		}(sp)
 	}
+
 	wg.Wait()
 	if readme.Len() > 0 {
-		ioutil.WriteFile("README.txt", []byte(readme.String()), 0755)
+		readme.FlushReadme()
 	}
 	os.Chdir(dir)
 	log.Println("downloading end, make tar")

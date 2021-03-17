@@ -31,6 +31,27 @@ type pin struct {
 	URL  string `json:"imgUrl"`
 }
 
+func splitPins(arr []pin, num int) (segmens [][]pin, err error) {
+	// num is the number of splits
+	max := len(arr)
+	if max < num {
+		err = errors.New("out of slice size")
+		return
+	}
+	quantity := max / num
+	end := 0
+	for i := 1; i <= num; i++ {
+		qu := i * quantity
+		if i != num {
+			segmens = append(segmens, arr[i-1+end:qu])
+		} else {
+			segmens = append(segmens, arr[i-1+end:])
+		}
+		end = qu - i
+	}
+	return
+}
+
 func errView(w http.ResponseWriter, err error) {
 	fmt.Fprintf(
 		w, `{"code":-1,"msg":"%s"}`, strings.ReplaceAll(err.Error(), `"`, `'`),
