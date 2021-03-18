@@ -133,7 +133,6 @@ func downloadBoard(data *download) {
 					var resp *http.Response
 					var err error
 					for retry <= 3 {
-						log.Println(retry)
 						resp, err = httpGet(p.URL, headers, retry*10*time.Second)
 						if err == nil {
 							break
@@ -176,8 +175,8 @@ func downloadBoard(data *download) {
 		log.Println(err)
 		return
 	}
+	defer os.Remove(data.BoardId)
 	size := formatSize(ui.Size())
-	os.Remove(data.BoardId)
 	body := make(map[string]string)
 	body["uifn"] = data.Uifn
 	body["uifnKey"] = data.UifnKey
@@ -207,6 +206,7 @@ func cleanDownload(hours int) {
 			continue
 		}
 		ns := strings.Split(strings.TrimSuffix(n, path.Ext(n)), "_")
+		log.Println(n, ns)
 		if len(ns) < 2 {
 			continue
 		}
