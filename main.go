@@ -33,6 +33,7 @@ var (
 	token  string
 	status string
 	alert  string // alert email
+	hour   uint   // clean hour
 
 	rc *redis.Client
 )
@@ -50,6 +51,7 @@ func init() {
 	flag.BoolVar(&i, "info", false, "")
 
 	flag.BoolVar(&noclean, "noclean", false, "")
+	flag.UintVar(&hour, "hour", 12, "")
 
 	flag.StringVar(&host, "host", "0.0.0.0", "")
 	flag.UintVar(&port, "port", 13145, "")
@@ -106,6 +108,7 @@ Flags:
   -v, --version         show cli version and exit
   -i, --info            show version and system info
       --noclean         do not automatically clean up download files (env)
+      --hour            if clean, expiration time (default 12)
       --host            http listen host (default "0.0.0.0", env)
       --port            http listen port (default 13145, env)
   -d, --dir             download base directory (required)
@@ -182,9 +185,12 @@ func handle() {
 	rc = redis.NewClient(opt)
 
 	if !noclean {
+		if hour <= 0 {
+			hour = 12
+		}
 		go func() {
 			for {
-				cleanDownload(12)
+				cleanDownload(int(hour))
 				time.Sleep(time.Minute)
 			}
 		}()

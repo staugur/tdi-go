@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -56,9 +57,13 @@ func downloadBoard(data *download) {
 
 	var gs int // Divide pins into some number parts
 	var maxLimit int = 20
+	if len(pins) > 5000 {
+		maxLimit = 50
+	} else if len(pins) > 10000 {
+		maxLimit = 100
+	}
 	if len(pins) > maxLimit {
 		gs = len(pins) / maxLimit
-		//runtime.GOMAXPROCS(gs + runtime.NumGoroutine())
 	} else {
 		gs = 1
 	}
@@ -75,11 +80,10 @@ func downloadBoard(data *download) {
 
 	err = os.Chdir(dir)
 	if err != nil {
-		log.Println(err.Error() + "\n")
+		log.Println(err.Error())
 	}
 	err = ufc.CreateDir(data.BoardId)
 	if err != nil {
-		allowDown = false
 		log.Printf("create board directory failed: %s\n", err.Error())
 		return
 	}
@@ -87,7 +91,6 @@ func downloadBoard(data *download) {
 	os.Chdir(data.BoardId)
 
 	// split download pins
-	fmt.Printf("pin len:%d, gs:%d\n", len(pins), gs)
 	spins, err := splitPins(pins, gs)
 	if err != nil {
 		allowDown = false
@@ -96,6 +99,7 @@ func downloadBoard(data *download) {
 
 	// if allowDown is false, abort the program
 	if !allowDown {
+		log.Println("system judgment is not allowed to download")
 		readme.FlushReadme()
 		return
 	}
@@ -144,20 +148,21 @@ func downloadBoard(data *download) {
 						return
 					}
 					defer resp.Body.Close()
-					body, err := ioutil.ReadAll(resp.Body)
+					pf, err := os.Create(p.Name)
 					if err != nil {
 						readme.WriteE(err)
 						return
 					}
-					ioutil.WriteFile(p.Name, body, 0755)
+					defer pf.Close()
+					io.Copy(pf, resp.Body)
 					time.Sleep(10 * time.Millisecond)
 				}(p)
 			}
 		}(sp)
 	}
-
 	wg.Wait()
 	if readme.Len() > 0 {
+		log.Println("discover warning tips for Readme.txt")
 		readme.FlushReadme()
 	}
 	os.Chdir(dir)
@@ -187,7 +192,7 @@ func downloadBoard(data *download) {
 		log.Println(err)
 		return
 	}
-	defer resp.Body.Close()
+	resp.Body.Close()
 	log.Println("download over, successfully")
 }
 
@@ -206,7 +211,6 @@ func cleanDownload(hours int) {
 			continue
 		}
 		ns := strings.Split(strings.TrimSuffix(n, path.Ext(n)), "_")
-		log.Println(n, ns)
 		if len(ns) < 2 {
 			continue
 		}
