@@ -151,7 +151,7 @@ func httpPost(url string, data map[string]string) (resp *http.Response, err erro
 		return
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("User-Agent", "tdi/go")
+	req.Header.Set("User-Agent", "tdi/v"+version)
 
 	return client.Do(req)
 }

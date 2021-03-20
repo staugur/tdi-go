@@ -1,7 +1,7 @@
 .PHONY: help
 
 BINARY=tdi
-Version=$(shell grep "const version" main.go | tr -d '"' | awk '{print $NF}')
+Version=$(shell grep "const version" main.go | tr -d '"' | awk '{print $$NF}')
 
 help:
 	@echo "  make clean  - Remove binaries and vim swap files"
@@ -14,7 +14,7 @@ gotool:
 	go vet ./
 
 build:
-	go build -ldflags "-s -w" -o bin/$(BINARY) && chmod +x bin/$(BINARY)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o bin/$(BINARY) && chmod +x bin/$(BINARY)
 
 docker:
 	docker build -t staugur/tdi-go .

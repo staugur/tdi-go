@@ -13,13 +13,14 @@ import (
 
 func router(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
-	w.Header().Set("Server", "tdi/go")
+	w.Header().Set("Server", "tdi/v"+version)
 	w.Header().Set("Content-Type", "application/json")
 	err := signatureRequired(r)
 	if err != nil {
 		errView(w, err)
 		return
 	}
+	// TODO: downloads path
 	if path == "/ping" {
 		if r.Method != "GET" {
 			errView405(w)
@@ -38,7 +39,6 @@ func router(w http.ResponseWriter, r *http.Request) {
 }
 
 func pingView(w http.ResponseWriter, r *http.Request) {
-	info := make(map[string]interface{})
 	load5, err := loadStat()
 	if err != nil {
 		errView500(w, err)
@@ -54,6 +54,7 @@ func pingView(w http.ResponseWriter, r *http.Request) {
 		errView500(w, err)
 		return
 	}
+	info := make(map[string]interface{})
 	info["code"] = 0
 	info["version"] = version
 	info["status"] = status

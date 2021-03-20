@@ -1,13 +1,14 @@
 # tdi-go
-🍒花瓣网、堆糖网下载油猴脚本的远程下载服务（Tdi for Go）.
+
+🍒 花瓣网、堆糖网下载油猴脚本的远程下载服务（Tdi for Go）.
 
 此程序相当于`CrawlHuaban`(中心端)的成员，用户选择远端下载后会由中心端选择一个成员提供给用户，减少中心端压力。
 
-Python版本的仓库地址是：https://github.com/staugur/tdi
+Python 版本的仓库地址是：https://github.com/staugur/tdi
 
-PHP版本的仓库地址是：https://github.com/staugur/tdi-php
+PHP 版本的仓库地址是：https://github.com/staugur/tdi-php
 
-Node.js版本的仓库地址是：https://github.com/staugur/tdi-node
+Node.js 版本的仓库地址是：https://github.com/staugur/tdi-node
 
 ## 安装
 
@@ -23,6 +24,15 @@ mv ~/go/bin/tdi /bin/tdi
 tdi -i
 ```
 
+**或者从源码安装**
+
+```bash
+git clone https://github.com/staugur/tdi-go && cd tdi-go
+make build
+mv bin/tdi /bin/tdi
+tdi -i
+```
+
 ### 使用 docker 安装
 
 ```bash
@@ -31,7 +41,7 @@ docker pull staugur/tdi-go
 
 [点击查看详细文档](https://docs.saintic.com/tdi-go/)
 
-## Nginx参考
+## Nginx 参考
 
 ```nginx
 server {

@@ -73,7 +73,7 @@ func memRate() (percent float64, err error) {
 	return strconv.ParseFloat(p, 64)
 }
 
-// loadStat return load value in 5 minutes(float)
+// loadStat returns load value in 5 minutes(float)
 func loadStat() (loadavg5 float64, err error) {
 	f := "/proc/loadavg"
 	if !ufc.IsFile(f) {
@@ -148,7 +148,7 @@ func makeTarFile(tarFilename, tarPath string, exclude []string) (err error) {
 	})
 }
 
-// formatSize: format byte size as kilobytes, megabytes, gigabytes
+// formatSize format byte size as kilobytes, megabytes, gigabytes
 func formatSize(b int64) string {
 	const unit = 1000
 	if b < unit {
