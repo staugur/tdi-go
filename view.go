@@ -20,7 +20,6 @@ func router(w http.ResponseWriter, r *http.Request) {
 		errView(w, err)
 		return
 	}
-	// TODO: downloads path
 	if path == "/ping" {
 		if r.Method != "GET" {
 			errView405(w)
@@ -62,7 +61,6 @@ func pingView(w http.ResponseWriter, r *http.Request) {
 	info["diskRate"] = diskp
 	info["loadFive"] = load5
 	info["timestamp"] = time.Now().Unix()
-	info["email"] = alert
 	info["lang"] = runtime.Version()
 	info["rqcount"] = -1
 	info["rqfailed"] = -1

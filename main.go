@@ -17,7 +17,7 @@ import (
 	"tcw.im/ufc"
 )
 
-const version = "0.1.0"
+const version = "0.1.1"
 
 var (
 	h bool
@@ -32,8 +32,7 @@ var (
 	rawurl string // redis connect url
 	token  string
 	status string
-	alert  string // alert email
-	hour   uint   // clean hour
+	hour   uint // clean hour
 
 	rc *redis.Client
 )
@@ -67,9 +66,6 @@ func init() {
 
 	flag.StringVar(&status, "s", "ready", "")
 	flag.StringVar(&status, "status", "ready", "")
-
-	flag.StringVar(&alert, "a", "", "")
-	flag.StringVar(&alert, "alert", "", "")
 
 	flag.Usage = usage
 }
@@ -111,12 +107,11 @@ Flags:
       --hour            if clean, expiration time (default 12)
       --host            http listen host (default "0.0.0.0", env)
       --port            http listen port (default 13145, env)
-  -d, --dir             download base directory (required)
+  -d, --dir             download base directory (required, env)
   -r, --redis           redis url, DSN-Style (required, env)
                         format: redis://[:<password>@]host[:port/db]
   -t, --token           password to verify identity (required, env)
   -s, --status          set this service status: ready or tardy, (default ready)
-  -a, --alert           set alarm mailbox (env)
 `
 	fmt.Println(helpStr)
 }
@@ -148,9 +143,6 @@ func handle() {
 			fmt.Println("invalid environment tdi_token")
 			os.Exit(129)
 		}
-	}
-	if alert == "" {
-		alert = os.Getenv("tdi_alert")
 	}
 	if status == "" {
 		status = os.Getenv("tdi_status")
@@ -198,6 +190,10 @@ func handle() {
 
 	// view.go
 	http.HandleFunc("/", router)
+	http.Handle(
+		"/downloads/",
+		http.StripPrefix("/downloads", http.FileServer(http.Dir(dir))),
+	)
 	listen := fmt.Sprintf("%s:%d", host, port)
 	log.Println("HTTP listen on " + listen)
 	log.Fatal(http.ListenAndServe(listen, nil))
