@@ -232,7 +232,6 @@ func cleanDownload(hours int) {
 			var data clean
 			err := deserialize(&data, n)
 			if err != nil {
-				log.Println(err)
 				continue
 			}
 
@@ -246,7 +245,6 @@ func cleanDownload(hours int) {
 			}
 			defer resp.Body.Close()
 			text, err := ioutil.ReadAll(resp.Body)
-			fmt.Println(err)
 			if err != nil {
 				continue
 			}

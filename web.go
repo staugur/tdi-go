@@ -4,12 +4,13 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/labstack/echo/v4"
 )
 
 type download struct {
@@ -36,6 +37,11 @@ type pin struct {
 	URL  string `json:"imgUrl"`
 }
 
+type eres struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+}
+
 func splitPins(arr []pin, num int) (segmens [][]pin, err error) {
 	// num is the number of splits
 	max := len(arr)
@@ -57,39 +63,20 @@ func splitPins(arr []pin, num int) (segmens [][]pin, err error) {
 	return
 }
 
-func errView(w http.ResponseWriter, err error) {
-	fmt.Fprintf(
-		w, `{"code":-1,"msg":"%s"}`, strings.ReplaceAll(err.Error(), `"`, `'`),
-	)
+func customHTTPErrorHandler(err error, c echo.Context) {
+	code := http.StatusBadRequest
+	msg := err.Error()
+	if he, ok := err.(*echo.HTTPError); ok {
+		code = he.Code
+		msg = he.Message.(string)
+	}
+	c.JSON(code, eres{-1, msg})
 }
 
-func errView500(w http.ResponseWriter, err error) {
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprintf(
-		w, `{"code":500,"msg":"%s"}`, strings.ReplaceAll(err.Error(), `"`, `'`),
-	)
-}
-
-func errView400(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte(`{"code":400,"msg":"bad request"}`))
-}
-
-func errView404(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusNotFound)
-	w.Write([]byte(`{"code":404,"msg":"not found"}`))
-}
-
-func errView405(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusMethodNotAllowed)
-	w.Write([]byte(`{"code":405,"msg":"method not allowed"}`))
-}
-
-func signatureRequired(r *http.Request) error {
-	arg := r.URL.Query()
-	signature := arg.Get("signature")
-	timestamp := arg.Get("timestamp")
-	nonce := arg.Get("nonce")
+func signatureRequired(c echo.Context) error {
+	signature := c.QueryParam("signature")
+	timestamp := c.QueryParam("timestamp")
+	nonce := c.QueryParam("nonce")
 	if signature == "" || timestamp == "" || nonce == "" {
 		return errors.New("invalid param")
 	}

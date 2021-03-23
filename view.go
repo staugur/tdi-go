@@ -5,52 +5,31 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"net/http"
+	"path"
+	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
+
+	"github.com/labstack/echo/v4"
+	"tcw.im/ufc"
 )
 
-func router(w http.ResponseWriter, r *http.Request) {
-	path := r.URL.Path
-	w.Header().Set("Server", "tdi/v"+version)
-	w.Header().Set("Content-Type", "application/json")
-	err := signatureRequired(r)
-	if err != nil {
-		errView(w, err)
-		return
+func pingView(c echo.Context) error {
+	if err := signatureRequired(c); err != nil {
+		return err
 	}
-	if path == "/ping" {
-		if r.Method != "GET" {
-			errView405(w)
-			return
-		}
-		pingView(w, r)
-	} else if path == "/download" {
-		if r.Method != "POST" {
-			errView405(w)
-			return
-		}
-		downloadView(w, r)
-	} else {
-		errView404(w)
-	}
-}
-
-func pingView(w http.ResponseWriter, r *http.Request) {
 	load5, err := loadStat()
 	if err != nil {
-		errView500(w, err)
-		return
+		return err
 	}
 	memp, err := memRate()
 	if err != nil {
-		errView500(w, err)
-		return
+		return err
 	}
 	diskp, err := diskRate(dir)
 	if err != nil {
-		errView500(w, err)
-		return
+		return err
 	}
 	info := make(map[string]interface{})
 	info["code"] = 0
@@ -64,44 +43,49 @@ func pingView(w http.ResponseWriter, r *http.Request) {
 	info["rqcount"] = -1
 	info["rqfailed"] = -1
 	info["goroutine"] = runtime.NumGoroutine()
-
-	data, err := json.Marshal(info)
-	if err != nil {
-		errView500(w, err)
-	}
-	w.Write(data)
+	return c.JSON(200, info)
 }
 
-func downloadView(w http.ResponseWriter, r *http.Request) {
-	data := &download{}
-	err := json.NewDecoder(r.Body).Decode(data)
-	if err != nil {
-		errView400(w)
-		return
+func downloadView(c echo.Context) error {
+	if err := signatureRequired(c); err != nil {
+		return err
 	}
+	data := &download{}
+	if err := c.Bind(&data); err != nil {
+		return err
+	}
+
 	if data.UifnKey == "" || data.Uifn == "" || data.BoardId == "" ||
 		data.BoardPins == "" || data.Ctime == 0 || data.Etime == 0 {
-		errView(w, errors.New("invalid param"))
-		return
+		return errors.New("invalid param")
 	}
 
 	pins := make([]pin, 0)
 	json.Unmarshal([]byte(data.BoardPins), &pins)
 	if len(pins) < 1 {
-		errView(w, errors.New("empty download"))
-		return
+		return errors.New("empty download")
 	}
 	data.downloads = pins
 
 	// write to temp file
-	err = serialize(clean{data.Uifn, data.CallbackURL}, data.Uifn)
-	if err != nil {
-		errView(w, err)
-		return
+	simple := clean{data.Uifn, data.CallbackURL}
+	if err := serialize(simple, data.Uifn); err != nil {
+		return err
 	}
 
 	go downloadBoard(data)
 
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(`{"code":0,"msg":"downloading"}`))
+	return c.JSONBlob(201, []byte(`{"code":0,"msg":"downloading"}`))
+}
+
+func sendfileView(c echo.Context) error {
+	name := c.Param("filename")
+	if name == "" || !strings.HasPrefix(name, "hb_") {
+		return c.String(400, "illegal filename")
+	}
+	f := filepath.Join(dir, path.Clean(name))
+	if !ufc.IsFile(f) {
+		return c.String(404, "not found")
+	}
+	return c.Attachment(f, name)
 }

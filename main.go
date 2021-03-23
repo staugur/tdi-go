@@ -4,8 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"mime"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -14,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/labstack/echo/v4"
 	"tcw.im/ufc"
 )
 
@@ -166,13 +165,12 @@ func handle() {
 	}
 
 	// view.go
-	mime.AddExtensionType(".tar", "application/octet-stream")
-	http.HandleFunc("/", router)
-	http.Handle(
-		"/downloads/",
-		http.StripPrefix("/downloads", http.FileServer(http.Dir(dir))),
-	)
+	e := echo.New()
+	e.HTTPErrorHandler = customHTTPErrorHandler
+	e.GET("/ping", pingView)
+	e.POST("/download", downloadView)
+	e.GET("/downloads/:filename", sendfileView)
 	listen := fmt.Sprintf("%s:%d", host, port)
-	log.Println("HTTP listen on " + listen)
-	log.Fatal(http.ListenAndServe(listen, nil))
+	e.Logger.Info("HTTP listen on " + listen)
+	e.Logger.Fatal(e.Start(listen))
 }
