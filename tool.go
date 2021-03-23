@@ -161,8 +161,7 @@ func formatSize(b int64) string {
 		div *= unit
 		exp++
 	}
-	return fmt.Sprintf("%.1f %cB",
-		float64(b)/float64(div), "kMGTPE"[exp])
+	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
 }
 
 func SHA1(text string) string {
@@ -175,7 +174,11 @@ func SHA1(text string) string {
 }
 
 func seriaName(filename string) string {
-	return filepath.Join(os.TempDir(), fmt.Sprintf(".%s.dat", filename))
+	td := os.TempDir()
+	if !ufc.IsDir(td) {
+		td = dir
+	}
+	return filepath.Join(td, fmt.Sprintf(".%s.dat", filename))
 }
 
 func serialize(data interface{}, filename string) error {
