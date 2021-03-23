@@ -4,7 +4,9 @@ package main
 
 import (
 	"archive/tar"
+	"bytes"
 	"crypto/sha1"
+	"encoding/gob"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -170,4 +172,32 @@ func SHA1(text string) string {
 	h := sha1.New()
 	h.Write([]byte(text))
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+func seriaName(filename string) string {
+	return filepath.Join(os.TempDir(), fmt.Sprintf(".%s.dat", filename))
+}
+
+func serialize(data interface{}, filename string) error {
+	buffer := new(bytes.Buffer)
+	encoder := gob.NewEncoder(buffer)
+	err := encoder.Encode(data)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(seriaName(filename), buffer.Bytes(), 0600)
+}
+
+func deserialize(data interface{}, filename string) error {
+	raw, err := ioutil.ReadFile(seriaName(filename))
+	if err != nil {
+		return err
+	}
+	buffer := bytes.NewBuffer(raw)
+	dec := gob.NewDecoder(buffer)
+	return dec.Decode(data)
+}
+
+func rmserialize(filename string) error {
+	return os.Remove(seriaName(filename))
 }

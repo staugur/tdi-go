@@ -3,8 +3,6 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -206,6 +205,7 @@ func cleanDownload(hours int) {
 		if !f.Mode().IsRegular() {
 			continue
 		}
+		// n is Uifn
 		n := f.Name()
 		if path.Ext(n) != ".tar" {
 			continue
@@ -222,23 +222,20 @@ func cleanDownload(hours int) {
 		if aid != "hb" {
 			continue
 		}
-		// enter the processing flow
+		// checked pass, enter the processing flow
 		ctime := mst / 1000
 		fctime := f.ModTime().Unix()
 		ltime := 60 * 60 * hours
 		nt := nowTimestamp()
 		if (ctime+ltime) <= int(nt) && (fctime+int64(ltime)) <= nt {
 			// expired, clean and report
-			val, err := rc.Get(context.Background(), n).Result()
+			var data clean
+			err := deserialize(&data, n)
 			if err != nil {
+				log.Println(err)
 				continue
 			}
 
-			data := &download{}
-			err = json.Unmarshal([]byte(val), data)
-			if err != nil {
-				continue
-			}
 			body := make(map[string]string)
 			body["uifn"] = data.Uifn
 
@@ -247,12 +244,14 @@ func cleanDownload(hours int) {
 				log.Println(err)
 				continue
 			}
+			defer resp.Body.Close()
 			text, err := ioutil.ReadAll(resp.Body)
-			resp.Body.Close()
+			fmt.Println(err)
 			if err != nil {
 				continue
 			}
-			os.Remove(n)
+			rmserialize(n)
+			os.Remove(filepath.Join(dir, n))
 			log.Printf("Update expired status for %s, resp is %s", n, string(text))
 		}
 	}

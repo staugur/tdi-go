@@ -3,7 +3,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -94,13 +93,12 @@ func downloadView(w http.ResponseWriter, r *http.Request) {
 	}
 	data.downloads = pins
 
-	// write to redis
-	dumps, err := json.Marshal(data)
+	// write to temp file
+	err = serialize(clean{data.Uifn, data.CallbackURL}, data.Uifn)
 	if err != nil {
 		errView(w, err)
 		return
 	}
-	rc.Set(context.Background(), data.Uifn, dumps, 7*24*time.Hour)
 
 	go downloadBoard(data)
 

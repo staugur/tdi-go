@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"path"
@@ -13,11 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"tcw.im/ufc"
 )
 
-const version = "0.1.1"
+const version = "0.2.0"
 
 var (
 	h bool
@@ -29,12 +29,9 @@ var (
 	dir    string // download absolute path
 	host   string
 	port   uint
-	rawurl string // redis connect url
 	token  string
 	status string
 	hour   uint // clean hour
-
-	rc *redis.Client
 )
 
 func init() {
@@ -57,9 +54,6 @@ func init() {
 
 	flag.StringVar(&dir, "d", "", "")
 	flag.StringVar(&dir, "dir", "", "")
-
-	flag.StringVar(&rawurl, "r", "", "")
-	flag.StringVar(&rawurl, "redis", "", "")
 
 	flag.StringVar(&token, "t", "", "")
 	flag.StringVar(&token, "token", "", "")
@@ -108,8 +102,6 @@ Flags:
       --host            http listen host (default "0.0.0.0", env)
       --port            http listen port (default 13145, env)
   -d, --dir             download base directory (required, env)
-  -r, --redis           redis url, DSN-Style (required, env)
-                        format: redis://[:<password>@]host[:port/db]
   -t, --token           password to verify identity (required, env)
   -s, --status          set this service status: ready or tardy, (default ready)
 `
@@ -129,13 +121,6 @@ func handle() {
 	}
 	if !path.IsAbs(dir) {
 		dir = filepath.Join(cwd(), dir)
-	}
-	if rawurl == "" {
-		rawurl = os.Getenv("tdi_redis")
-		if rawurl == "" {
-			fmt.Println("invalid environment tdi_redis")
-			os.Exit(128)
-		}
 	}
 	if token == "" {
 		token = os.Getenv("tdi_token")
@@ -168,14 +153,6 @@ func handle() {
 		port = uint(envport)
 	}
 
-	// init redis connect client
-	opt, err := redis.ParseURL(rawurl)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	rc = redis.NewClient(opt)
-
 	if !noclean {
 		if hour <= 0 {
 			hour = 12
@@ -189,6 +166,7 @@ func handle() {
 	}
 
 	// view.go
+	mime.AddExtensionType(".tar", "application/octet-stream")
 	http.HandleFunc("/", router)
 	http.Handle(
 		"/downloads/",

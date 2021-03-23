@@ -13,10 +13,10 @@ import (
 )
 
 type download struct {
+	Uifn           string  `json:"uifn"`
 	UifnKey        string  `json:"uifnKey"`
 	Site           uint8   `json:"site"`
 	BoardId        string  `json:"board_id"`
-	Uifn           string  `json:"uifn"`
 	Ctime          uint    `json:"ctime"`
 	Etime          uint    `json:"etime"`
 	BoardPins      string  `json:"board_pins"`
@@ -24,6 +24,11 @@ type download struct {
 	MAXBoardNumber uint    `json:"MAX_BOARD_NUMBER"`
 	CallbackURL    string  `json:"CALLBACK_URL"`
 	DiskLimit      float64 `json:"DISKLIMIT"`
+}
+
+type clean struct {
+	Uifn        string `json:"uifn"`
+	CallbackURL string `json:"CALLBACK_URL"`
 }
 
 type pin struct {
