@@ -111,41 +111,33 @@ func makeTarFile(tarFilename, tarPath string, exclude []string) (err error) {
 		if err != nil {
 			return err
 		}
-
 		// if the filename suffix (such as .gz .xxx) is in the exclusion list,
 		// do not compress
 		if ufc.StrInSlice(path.Ext(fileName), exclude) {
 			return nil
 		}
-
 		// if not is a standard file, do not process it, such as: directory
 		if !fi.Mode().IsRegular() {
 			return nil
 		}
-
 		hdr, err := tar.FileInfoHeader(fi, "")
 		if err != nil {
 			return err
 		}
-
 		// write file information
 		if err := tw.WriteHeader(hdr); err != nil {
 			return err
 		}
-
 		fr, err := os.Open(fileName)
 		if err != nil {
 			return err
 		}
-
 		_, err = io.Copy(tw, fr)
 		if err != nil {
 			return err
 		}
-
 		fr.Close()
 		os.Remove(fileName)
-
 		return nil
 	})
 }

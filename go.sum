@@ -51,3 +51,5 @@ tcw.im/go-disk-usage v0.1.1 h1:YRYJPIPA5rrWVoIRlZaLUhCEqWWpp7YXDhxPteFf31M=
 tcw.im/go-disk-usage v0.1.1/go.mod h1:f5eAEDC4HBmFpjcgjqKqlbLLUAGq/WZTaV+iY0wb9TM=
 tcw.im/ufc v0.2.0 h1:KMDmg5V5XY6AwZ8yqcKylyJes7lFkKo+TWoIzSsuuNU=
 tcw.im/ufc v0.2.0/go.mod h1:4sLSW0m2jjH7hNs9MTq3FSCwymTlUcaJsNT9t4clHL4=
+tcw.im/ufc v0.2.1 h1:7hT9Ecp/BiUZ/qKXaPKMNNkA2oPMoq/XGW4NQYbl3BQ=
+tcw.im/ufc v0.2.1/go.mod h1:4sLSW0m2jjH7hNs9MTq3FSCwymTlUcaJsNT9t4clHL4=
