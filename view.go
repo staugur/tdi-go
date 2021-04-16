@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"tcw.im/ufc"
+	"tcw.im/gtc"
 )
 
 func pingView(c echo.Context) error {
@@ -84,7 +84,7 @@ func sendfileView(c echo.Context) error {
 		return c.String(400, "illegal filename")
 	}
 	f := filepath.Join(dir, path.Clean(name))
-	if !ufc.IsFile(f) {
+	if !gtc.IsFile(f) {
 		return c.String(404, "not found")
 	}
 	return c.Attachment(f, name)

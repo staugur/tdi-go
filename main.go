@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"tcw.im/ufc"
+	"tcw.im/gtc"
 )
 
-const version = "0.2.0"
+const version = "0.2.1"
 
 var (
 	h bool
@@ -115,8 +115,8 @@ func handle() {
 		fmt.Println("invalid dir")
 		os.Exit(127)
 	}
-	if !ufc.IsDir(dir) {
-		ufc.CreateDir(dir)
+	if !gtc.IsDir(dir) {
+		gtc.CreateDir(dir)
 	}
 	if !path.IsAbs(dir) {
 		dir = filepath.Join(cwd(), dir)
@@ -134,7 +134,7 @@ func handle() {
 	if status != "tardy" {
 		status = "ready"
 	}
-	if ufc.IsTrue(os.Getenv("tdi_noclean")) {
+	if gtc.IsTrue(os.Getenv("tdi_noclean")) {
 		noclean = true
 	}
 

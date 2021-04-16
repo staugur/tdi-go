@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"tcw.im/ufc"
+	"tcw.im/gtc"
 )
 
 type strbuilder struct {
@@ -81,7 +81,7 @@ func downloadBoard(data *download) {
 	if err != nil {
 		log.Println(err.Error())
 	}
-	err = ufc.CreateDir(data.BoardId)
+	err = gtc.CreateDir(data.BoardId)
 	if err != nil {
 		log.Printf("create board directory failed: %s\n", err.Error())
 		return
@@ -124,7 +124,7 @@ func downloadBoard(data *download) {
 			defer wg.Done()
 			for _, p := range sp {
 				func(p pin) {
-					if ufc.IsFile(p.Name) {
+					if gtc.IsFile(p.Name) {
 						return
 					}
 					dp, _ := diskRate(dir)

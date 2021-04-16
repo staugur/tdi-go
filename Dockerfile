@@ -1,5 +1,5 @@
 # build dependencies with alpine
-FROM golang:1.16.2-alpine3.13 AS builder
+FROM golang:1.16.3-alpine3.13 AS builder
 
 WORKDIR /build
 

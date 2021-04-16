@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"tcw.im/go-disk-usage/du"
-	"tcw.im/ufc"
+	"tcw.im/gtc"
 )
 
 func cwd() string {
@@ -41,7 +41,7 @@ func diskRate(volumePath string) (percent float64, err error) {
 // memRate returns system memory usage
 func memRate() (percent float64, err error) {
 	f := "/proc/meminfo"
-	if !ufc.IsFile(f) {
+	if !gtc.IsFile(f) {
 		err = errors.New("not found meminfo")
 		return
 	}
@@ -78,7 +78,7 @@ func memRate() (percent float64, err error) {
 // loadStat returns load value in 5 minutes(float)
 func loadStat() (loadavg5 float64, err error) {
 	f := "/proc/loadavg"
-	if !ufc.IsFile(f) {
+	if !gtc.IsFile(f) {
 		err = errors.New("not found loadavg")
 		return
 	}
@@ -93,7 +93,7 @@ func loadStat() (loadavg5 float64, err error) {
 // makeTarFile compress all files in a directory.
 // Automatically delete after compression.
 func makeTarFile(tarFilename, tarPath string, exclude []string) (err error) {
-	if !strings.HasSuffix(tarFilename, ".tar") || !ufc.IsDir(tarPath) {
+	if !strings.HasSuffix(tarFilename, ".tar") || !gtc.IsDir(tarPath) {
 		return errors.New("make tar: invalid param")
 	}
 	fw, err := os.Create(tarFilename)
@@ -113,7 +113,7 @@ func makeTarFile(tarFilename, tarPath string, exclude []string) (err error) {
 		}
 		// if the filename suffix (such as .gz .xxx) is in the exclusion list,
 		// do not compress
-		if ufc.StrInSlice(path.Ext(fileName), exclude) {
+		if gtc.StrInSlice(path.Ext(fileName), exclude) {
 			return nil
 		}
 		// if not is a standard file, do not process it, such as: directory
@@ -167,7 +167,7 @@ func SHA1(text string) string {
 
 func seriaName(filename string) string {
 	td := os.TempDir()
-	if !ufc.IsDir(td) {
+	if !gtc.IsDir(td) {
 		td = dir
 	}
 	return filepath.Join(td, fmt.Sprintf(".%s.dat", filename))
