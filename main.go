@@ -1,3 +1,19 @@
+/*
+   Copyright 2021 Hiroshi.tao
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 package main
 
 import (
@@ -16,7 +32,7 @@ import (
 	"tcw.im/gtc"
 )
 
-const version = "0.2.1"
+const version = "0.2.2"
 
 var (
 	h bool
@@ -32,6 +48,8 @@ var (
 	status string
 	hour   uint // clean hour
 )
+
+const d = "downloads"
 
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -100,9 +118,9 @@ Flags:
       --hour            if clean, expiration time (default 12)
       --host            http listen host (default "0.0.0.0", env)
       --port            http listen port (default 13145, env)
-  -d, --dir             download base directory (required, env)
-  -t, --token           password to verify identity (required, env)
-  -s, --status          set this service status: ready or tardy, (default ready)
+  -d, --dir             download base directory (default "downloads", env)
+  -t, --token           password to verify identity (required<random>, env)
+  -s, --status          set service status: ready or tardy, (default "ready")
 `
 	fmt.Println(helpStr)
 }
@@ -112,8 +130,7 @@ func handle() {
 		dir = os.Getenv("tdi_dir")
 	}
 	if dir == "" {
-		fmt.Println("invalid dir")
-		os.Exit(127)
+		dir = d
 	}
 	if !gtc.IsDir(dir) {
 		gtc.CreateDir(dir)
@@ -121,11 +138,12 @@ func handle() {
 	if !path.IsAbs(dir) {
 		dir = filepath.Join(cwd(), dir)
 	}
+	isRandomToken := false
 	if token == "" {
 		token = os.Getenv("tdi_token")
 		if token == "" {
-			fmt.Println("invalid environment tdi_token")
-			os.Exit(129)
+			token = genRandomString(8)
+			isRandomToken = true
 		}
 	}
 	if status == "" {
@@ -166,11 +184,13 @@ func handle() {
 
 	// view.go
 	e := echo.New()
+	e.HideBanner = true
 	e.HTTPErrorHandler = customHTTPErrorHandler
 	e.GET("/ping", pingView)
 	e.POST("/download", downloadView)
 	e.GET("/downloads/:filename", sendfileView)
-	listen := fmt.Sprintf("%s:%d", host, port)
-	e.Logger.Info("HTTP listen on " + listen)
-	e.Logger.Fatal(e.Start(listen))
+	if isRandomToken {
+		fmt.Println("the randomly generated token is: " + token)
+	}
+	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%d", host, port)))
 }
