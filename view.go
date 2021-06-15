@@ -61,6 +61,27 @@ func pingView(c echo.Context) error {
 	return c.JSON(200, info)
 }
 
+func healthyView(c echo.Context) error {
+	fail := 0
+	_, err := loadStat()
+	if err != nil {
+		fail += 1
+	}
+	_, err = memRate()
+	if err != nil {
+		fail += 1
+	}
+	_, err = diskRate(dir)
+	if err != nil {
+		fail += 1
+	}
+
+	if fail > 0 {
+		return c.JSONBlob(503, []byte(`"err"`))
+	}
+	return c.JSONBlob(200, []byte(`"ok"`))
+}
+
 func downloadView(c echo.Context) error {
 	if err := signatureRequired(c); err != nil {
 		return err

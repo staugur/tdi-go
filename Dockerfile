@@ -1,5 +1,8 @@
+ARG buildos=golang:1.16.5-alpine3.13
+ARG runos=scratch
+
 # build dependencies with alpine
-FROM golang:1.16.3-alpine3.13 AS builder
+FROM $buildos AS builder
 
 WORKDIR /build
 
@@ -9,7 +12,7 @@ RUN go env -w GOPROXY=https://goproxy.cn,direct && \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o tdi
 
 # run application with a small image
-FROM scratch
+FROM $runos
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 

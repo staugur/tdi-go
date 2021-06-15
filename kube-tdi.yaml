@@ -1,0 +1,68 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tdi-deploy
+  labels:
+    app: tdi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tdi
+  template:
+    metadata:
+      labels:
+        app: tdi
+      annotations:
+        port: "13145"
+        golang: "1.16"
+        github: "staugur/tdi-go"
+        download: "/tdi"
+    spec:
+      containers:
+        - name: tdi
+          image: docker.io/staugur/tdi-go:latest
+          imagePullPolicy: Always # 可修改image使用tag并注释此行
+          ports:
+            - containerPort: 13145
+          readinessProbe:
+            httpGet:
+              scheme: HTTP
+              port: 13145
+              path: /healthy
+            initialDelaySeconds: 3
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              scheme: HTTP
+              port: 13145
+              path: /healthy
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+          securityContext:
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - mountPath: /tdi
+              name: tdi-volume
+      volumes:
+        - name: tdi-volume
+          hostPath:
+            path: /path/to/local/tdi-go
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tdi-svc
+  labels:
+    app: tdi
+spec:
+  selector:
+    app: tdi
+  ports:
+  - name: tdi-port
+    protocol: TCP
+    port: 13145
+    targetPort: 13145
+  # 如需在Node上映射一个端口，请移除下方注释
+  # type: NodePort

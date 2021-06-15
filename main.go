@@ -32,7 +32,7 @@ import (
 	"tcw.im/gtc"
 )
 
-const version = "0.2.2"
+const version = "0.2.3"
 
 var (
 	h bool
@@ -187,6 +187,7 @@ func handle() {
 	e.HideBanner = true
 	e.HTTPErrorHandler = customHTTPErrorHandler
 	e.GET("/ping", pingView)
+	e.GET("/healthy", healthyView)
 	e.POST("/download", downloadView)
 	e.GET("/downloads/:filename", sendfileView)
 	if isRandomToken {
