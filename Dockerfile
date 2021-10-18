@@ -1,23 +1,17 @@
-ARG buildos=golang:1.16.5-alpine3.13
+ARG buildos=golang:1.17.2-alpine
 ARG runos=scratch
 
-# build dependencies with alpine
+# -- build dependencies with alpine --
 FROM $buildos AS builder
-
 WORKDIR /build
-
 COPY . .
+ARG goproxy
+ARG TARGETARCH
+RUN if [ "x$goproxy" != "x" ]; then go env -w GOPROXY=${goproxy},direct; fi ; \
+    CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -ldflags "-s -w" .
 
-RUN go env -w GOPROXY=https://goproxy.cn,direct && \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o tdi
-
-# run application with a small image
+# -- run application with a small image --
 FROM $runos
-
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-
 COPY --from=builder /build/tdi /bin/
-
 EXPOSE 13145
-
 ENTRYPOINT ["tdi", "-d", "/tdi"]

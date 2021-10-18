@@ -14,10 +14,13 @@ gotool:
 	go vet ./
 
 build:
+	go build -ldflags "-s -w" -o bin/$(BINARY) && chmod +x bin/$(BINARY)
+
+build-amd64:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o bin/$(BINARY) && chmod +x bin/$(BINARY)
 
 docker:
 	docker build -t staugur/tdi-go .
 
-release: gotool build
+release: gotool build-amd64
 	cd bin/ && tar zcvf $(BINARY).$(Version)-linux-amd64.tar.gz $(BINARY) && rm $(BINARY)

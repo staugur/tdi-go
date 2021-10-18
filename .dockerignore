@@ -5,3 +5,4 @@ Dockerfile
 Makefile
 README
 bin/
+dist/

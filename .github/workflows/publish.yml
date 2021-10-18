@@ -1,4 +1,5 @@
 name: Publish Docker image
+
 on:
   push:
     branches:
@@ -6,17 +7,35 @@ on:
       - dev
   release:
     types: [published]
+
 jobs:
-  push_to_registry:
-    name: Push Docker image to Docker Hub
+  docker:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out the repo
+      - name: Checkout
         uses: actions/checkout@v2
-      - name: Push to Docker Hub
-        uses: docker/build-push-action@v1
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          repository: staugur/tdi-go
-          tag_with_ref: true
+
+      - name: Extract branch name
+        id: branch
+        shell: bash
+        run: echo "##[set-output name=tag;]$(echo ${GITHUB_REF##*/} | sed 's/master/latest/')"
+
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/386,linux/arm/v6,linux/arm/v7,linux/arm64/v8
+          tags: staugur/tdi-go:${{ steps.branch.outputs.tag }}
