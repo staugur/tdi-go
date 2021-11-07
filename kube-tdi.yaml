@@ -47,8 +47,7 @@ spec:
               name: tdi-volume
       volumes:
         - name: tdi-volume
-          hostPath:
-            path: /path/to/local/tdi-go
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

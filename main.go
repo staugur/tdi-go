@@ -32,14 +32,15 @@ import (
 	"tcw.im/gtc"
 )
 
-const version = "0.2.4"
+const version = "0.2.5"
 
 var (
 	h bool
 	v bool
 	i bool
 
-	noclean bool // if true, do not delete download file, otherwise, auto delete
+	noclean   bool // if true, do not delete download file, otherwise, auto delete
+	cleanonce bool
 
 	dir    string // download absolute path
 	host   string
@@ -63,6 +64,7 @@ func init() {
 	flag.BoolVar(&i, "i", false, "")
 	flag.BoolVar(&i, "info", false, "")
 
+	flag.BoolVar(&cleanonce, "clean-once", false, "")
 	flag.BoolVar(&noclean, "noclean", false, "")
 	flag.UintVar(&hour, "hour", 12, "")
 
@@ -114,10 +116,11 @@ Flags:
   -h, --help            show this help message and exit
   -v, --version         show cli version and exit
   -i, --info            show version and system info
-      --noclean         do not automatically clean up download files (env)
-      --hour            if clean, expiration time (default 12)
       --host            http listen host (default "0.0.0.0", env)
       --port            http listen port (default 13145, env)
+      --hour            if clean, expiration time (default 12)
+      --noclean         do not automatically clean up download files (env)
+      --clean-once      manually clean up expired files (no run api)
   -d, --dir             download base directory (default "downloads", env)
   -t, --token           password to verify identity (required<random>, env)
   -s, --status          set service status: ready or tardy, (default "ready")
@@ -155,7 +158,6 @@ func handle() {
 	if gtc.IsTrue(os.Getenv("tdi_noclean")) {
 		noclean = true
 	}
-
 	envhost := os.Getenv("tdi_host")
 	envport := os.Getenv("tdi_port")
 	if envhost != "" {
@@ -169,11 +171,18 @@ func handle() {
 		}
 		port = uint(envport)
 	}
-
+	if hour <= 0 {
+		fmt.Println("hour needs to be greater than 0")
+		os.Exit(1)
+	}
+	// run clean download, only once, and exit
+	fmt.Println("cleanonce", cleanonce)
+	if cleanonce {
+		cleanDownload(int(hour))
+		os.Exit(0)
+	}
+	// start clean download task
 	if !noclean {
-		if hour <= 0 {
-			hour = 12
-		}
 		go func() {
 			for {
 				cleanDownload(int(hour))
@@ -181,8 +190,7 @@ func handle() {
 			}
 		}()
 	}
-
-	// view.go
+	// start api task
 	e := echo.New()
 	e.HideBanner = true
 	e.HTTPErrorHandler = customHTTPErrorHandler
@@ -193,5 +201,7 @@ func handle() {
 	if isRandomToken {
 		fmt.Println("the randomly generated token is: " + token)
 	}
-	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%d", host, port)))
+	address := fmt.Sprintf("%s:%d", host, port)
+	fmt.Println("HTTP listen on " + address)
+	e.Logger.Fatal(e.Start(address))
 }
