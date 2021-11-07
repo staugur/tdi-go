@@ -176,7 +176,6 @@ func handle() {
 		os.Exit(1)
 	}
 	// run clean download, only once, and exit
-	fmt.Println("cleanonce", cleanonce)
 	if cleanonce {
 		cleanDownload(int(hour))
 		os.Exit(0)
@@ -201,7 +200,5 @@ func handle() {
 	if isRandomToken {
 		fmt.Println("the randomly generated token is: " + token)
 	}
-	address := fmt.Sprintf("%s:%d", host, port)
-	fmt.Println("HTTP listen on " + address)
-	e.Logger.Fatal(e.Start(address))
+	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%d", host, port)))
 }

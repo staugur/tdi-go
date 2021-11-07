@@ -15,4 +15,5 @@ FROM $runos
 COPY --from=builder /build/tdi /bin/
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 EXPOSE 13145
-ENTRYPOINT ["tdi", "-d", "/tdi"]
+ENTRYPOINT ["tdi"]
+CMD ["-d", "/tdi"]
