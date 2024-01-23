@@ -30,6 +30,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -55,8 +56,7 @@ func diskRate(volumePath string) (percent float64, err error) {
 		err = e
 		return
 	}
-	percent = obj.UsedPercent
-	return
+	return strconv.ParseFloat(fmt.Sprintf("%.2f", obj.UsedPercent), 64)
 }
 
 // memRate returns system memory usage
@@ -66,8 +66,7 @@ func memRate() (percent float64, err error) {
 		err = e
 		return
 	}
-	percent = obj.UsedPercent
-	return
+	return strconv.ParseFloat(fmt.Sprintf("%.2f", obj.UsedPercent), 64)
 }
 
 // loadStat returns load value in 5 minutes(float)
