@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"tcw.im/gtc"
+	"pkg.tcw.im/gtc"
 )
 
 func pingView(c echo.Context) error {

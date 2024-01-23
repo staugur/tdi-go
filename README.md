@@ -16,10 +16,10 @@ Node.js 版本的仓库地址是：https://github.com/staugur/tdi-node
 
 ### 使用 golang 安装
 
-go1.15+, go module(on)
+go1.20+, go module(on)
 
 ```go
-go get -u tcw.im/tdi
+go get -u pkg.tcw.im/tdi
 mv ~/go/bin/tdi /bin/tdi
 tdi -i
 ```

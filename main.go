@@ -29,10 +29,10 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"tcw.im/gtc"
+	"pkg.tcw.im/gtc"
 )
 
-const version = "0.2.5"
+const version = "0.3.0"
 
 var (
 	h bool

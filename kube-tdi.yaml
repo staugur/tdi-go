@@ -16,7 +16,7 @@ spec:
         app: tdi
       annotations:
         port: "13145"
-        golang: "1.16"
+        golang: "1.20"
         github: "staugur/tdi-go"
         download: "/tdi"
     spec:

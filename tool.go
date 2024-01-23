@@ -27,16 +27,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
-	"tcw.im/go-disk-usage/du"
-	"tcw.im/gtc"
+	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/load"
+	"github.com/shirou/gopsutil/mem"
+	"pkg.tcw.im/gtc"
 )
 
 func cwd() string {
@@ -50,60 +50,35 @@ func nowTimestamp() int64 {
 
 // diskRate returns the usage rate of the disk where the directory is located
 func diskRate(volumePath string) (percent float64, err error) {
-	pct := du.DiskRate(volumePath) * 100
-	return strconv.ParseFloat(fmt.Sprintf("%.2f", pct), 64)
+	obj, e := disk.Usage(volumePath)
+	if e != nil {
+		err = e
+		return
+	}
+	percent = obj.UsedPercent
+	return
 }
 
 // memRate returns system memory usage
 func memRate() (percent float64, err error) {
-	f := "/proc/meminfo"
-	if !gtc.IsFile(f) {
-		err = errors.New("not found meminfo")
+	obj, e := mem.VirtualMemory()
+	if e != nil {
+		err = e
 		return
 	}
-	raw, err := ioutil.ReadFile(f)
-	if err != nil {
-		return
-	}
-	mi := strings.Split(strings.TrimSpace(string(raw)), "\n")
-	mem := make(map[string]int)
-	for _, m := range mi {
-		if m == "" {
-			continue
-		}
-		mi := strings.Split(m, ":")
-		k := strings.TrimSpace(mi[0])
-		if k == "SwapCached" {
-			break
-		}
-		v := strings.TrimSpace(mi[1])
-		v = strings.Trim(v, "kB ")
-		s, e := strconv.Atoi(v)
-		if e != nil {
-			err = e
-			return
-		}
-		mem[k] = s
-	}
-	used := mem["MemTotal"] - mem["MemFree"] - mem["Buffers"] - mem["Cached"]
-	percent = float64(used) / float64(mem["MemTotal"]) * 100
-	p := fmt.Sprintf("%.2f", percent)
-	return strconv.ParseFloat(p, 64)
+	percent = obj.UsedPercent
+	return
 }
 
 // loadStat returns load value in 5 minutes(float)
 func loadStat() (loadavg5 float64, err error) {
-	f := "/proc/loadavg"
-	if !gtc.IsFile(f) {
-		err = errors.New("not found loadavg")
+	obj, e := load.Avg()
+	if e != nil {
+		err = e
 		return
 	}
-	raw, err := ioutil.ReadFile(f)
-	if err != nil {
-		return
-	}
-	s := strings.Split(strings.TrimSpace(string(raw)), " ")[1]
-	return strconv.ParseFloat(s, 64)
+	loadavg5 = obj.Load5
+	return
 }
 
 // makeTarFile compress all files in a directory.
@@ -196,11 +171,11 @@ func serialize(data interface{}, filename string) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(seriaName(filename), buffer.Bytes(), 0600)
+	return os.WriteFile(seriaName(filename), buffer.Bytes(), 0600)
 }
 
 func deserialize(data interface{}, filename string) error {
-	raw, err := ioutil.ReadFile(seriaName(filename))
+	raw, err := os.ReadFile(seriaName(filename))
 	if err != nil {
 		return err
 	}

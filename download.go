@@ -20,7 +20,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -31,7 +30,7 @@ import (
 	"sync"
 	"time"
 
-	"tcw.im/gtc"
+	"pkg.tcw.im/gtc"
 )
 
 type strbuilder struct {
@@ -55,7 +54,7 @@ func (s strbuilder) Len() int {
 }
 
 func (s strbuilder) FlushReadme() error {
-	return ioutil.WriteFile("README.txt", []byte(s.String()), 0755)
+	return os.WriteFile("README.txt", []byte(s.String()), 0755)
 }
 
 func downloadBoard(data *download) {
@@ -129,7 +128,7 @@ func downloadBoard(data *download) {
 	}
 	headers := make(map[string]string)
 	headers["Referer"] = ref
-	headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:86.0) Gecko/20100101 Firefox/86.0"
+	headers["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:121.0) Gecko/20100101 Firefox/121.0"
 
 	var wg sync.WaitGroup
 	for _, sp := range spins {
@@ -212,12 +211,12 @@ func downloadBoard(data *download) {
 
 // perform a cleanup
 func cleanDownload(hours int) {
-	dfs, err := ioutil.ReadDir(dir)
+	dfs, err := os.ReadDir(dir)
 	if err != nil {
 		return
 	}
 	for _, f := range dfs {
-		if !f.Mode().IsRegular() {
+		if !f.Type().IsRegular() {
 			continue
 		}
 		// n is Uifn
@@ -238,8 +237,12 @@ func cleanDownload(hours int) {
 			continue
 		}
 		// checked pass, enter the processing flow
+		fi, fierr := f.Info()
+		if fierr != nil {
+			continue
+		}
 		ctime := mst / 1000
-		fctime := f.ModTime().Unix()
+		fctime := fi.ModTime().Unix()
 		ltime := 60 * 60 * hours
 		nt := nowTimestamp()
 		if (ctime+ltime) <= int(nt) && (fctime+int64(ltime)) <= nt {
@@ -259,7 +262,7 @@ func cleanDownload(hours int) {
 				continue
 			}
 			defer resp.Body.Close()
-			text, err := ioutil.ReadAll(resp.Body)
+			text, err := io.ReadAll(resp.Body)
 			if err != nil {
 				continue
 			}
