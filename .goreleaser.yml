@@ -9,12 +9,11 @@ builds:
       - -s -w
     goos:
       - linux
+    goarch:
+      - amd64
+      - arm64
 archives:
-  - replacements:
-      linux: linux
-      386: i386
-      amd64: amd64
-    name_template: "{{ .Binary }}.{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+  - name_template: "{{ .Binary }}.{{ .Version }}-{{ .Os }}-{{ .Arch }}"
 checksum:
   name_template: 'checksums.txt'
 snapshot:
