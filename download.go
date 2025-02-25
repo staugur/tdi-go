@@ -200,12 +200,18 @@ func downloadBoard(data *download) {
 	body["uifnKey"] = data.UifnKey
 	body["size"] = size
 	body["dtime"] = fmt.Sprintf("%d", dtime)
+	log.Printf("%v\n", body)
 	resp, err := httpPost(data.CallbackURL+"?Action=FIRST_STATUS", body)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
+	text, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Update download status for %s, resp is %s", data.Uifn, string(text))
+	}
+
 	log.Println("download over, successfully")
 }
 

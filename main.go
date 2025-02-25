@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -32,12 +33,15 @@ import (
 	"pkg.tcw.im/gtc"
 )
 
-const version = "0.3.2"
+const version = "0.3.3"
 
 var (
 	h bool
 	v bool
 	i bool
+
+	test    bool
+	testurl string
 
 	noclean   bool // if true, do not delete download file, otherwise, auto delete
 	cleanonce bool
@@ -63,6 +67,9 @@ func init() {
 
 	flag.BoolVar(&i, "i", false, "")
 	flag.BoolVar(&i, "info", false, "")
+
+	flag.BoolVar(&test, "test", false, "")
+	flag.StringVar(&testurl, "testurl", "https://open.saintic.com/CrawlHuaban/ping", "http get test url")
 
 	flag.BoolVar(&cleanonce, "clean-once", false, "")
 	flag.BoolVar(&noclean, "noclean", false, "")
@@ -101,6 +108,14 @@ func main() {
 		fmt.Printf("OS/Arch:     %s/%s\n", runtime.GOOS, runtime.GOARCH)
 		fmt.Printf("Disk Rate:   %.2f%%\n", dp)
 		fmt.Printf("Memory Rate: %.2f%%\n", mp)
+	} else if test {
+		resp, err := http.Get(testurl)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		defer resp.Body.Close()
+		fmt.Printf("Test code: %s\n", resp.Status)
 	} else {
 		handle()
 	}
@@ -124,6 +139,9 @@ Flags:
   -d, --dir             download base directory (default "downloads", env)
   -t, --token           password to verify identity (required<random>, env)
   -s, --status          set service status: ready or tardy, (default "ready")
+
+      --test            run one http get request to test connection
+      --testurl         test url address, http or https
 `
 	fmt.Println(helpStr)
 }
