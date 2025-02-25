@@ -200,16 +200,18 @@ func downloadBoard(data *download) {
 	body["uifnKey"] = data.UifnKey
 	body["size"] = size
 	body["dtime"] = fmt.Sprintf("%d", dtime)
-	log.Printf("%v\n", body)
-	resp, err := httpPost(data.CallbackURL+"?Action=FIRST_STATUS", body)
+	log.Printf("Post data: %v\n", body)
+	resp, err := httpPost(fmt.Sprintf("%s?Action=FIRST_STATUS", data.CallbackURL), body)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	defer resp.Body.Close()
 	text, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("Update download status for %s, resp is %s", data.Uifn, string(text))
+	if err == nil {
+		log.Printf("Update download status for %s, resp is %s\n", data.Uifn, string(text))
+	} else {
+		log.Println("Read first post callback result failed")
 	}
 
 	log.Println("download over, successfully")
@@ -261,8 +263,7 @@ func cleanDownload(hours int) {
 
 			body := make(map[string]string)
 			body["uifn"] = data.Uifn
-
-			resp, err := httpPost(data.CallbackURL+"?Action=SECOND_STATUS", body)
+			resp, err := httpPost(fmt.Sprintf("%s?Action=SECOND_STATUS", data.CallbackURL), body)
 			if err != nil {
 				log.Println(err)
 				continue
